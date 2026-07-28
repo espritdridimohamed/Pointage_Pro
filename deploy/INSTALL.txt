@@ -5,12 +5,12 @@
 ========================================
 
 STEP 1: Install Java
-curl -L -o "$env:TEMP\jre17.msi" "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi", "$env:TEMP\jre17.msi")
 Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\jre17.msi`" ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /quiet /norestart" -Wait
 
 
 STEP 2: Install XAMPP
-curl -L -o "$env:TEMP\xampp.exe" "https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile("https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download", "$env:TEMP\xampp.exe")
 Start-Process "$env:TEMP\xampp.exe" -ArgumentList "--unattendedmodeui none --install_dir C:\xampp --components `"mysql,apache,php`" --mode unattended" -Wait
 
 
@@ -32,7 +32,7 @@ Get-Command java | Select-Object -ExpandProperty Source
 
 
 STEP 6: Download NSSM + Register Service
-curl -L -o "$env:TEMP\nssm.zip" "https://nssm.cc/release/nssm-2.24.zip"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile("https://nssm.cc/release/nssm-2.24.zip", "$env:TEMP\nssm.zip")
 Expand-Archive "$env:TEMP\nssm.zip" -DestinationPath "$env:TEMP\nssm" -Force
 Copy-Item "$env:TEMP\nssm\nssm-2.24\win64\nssm.exe" "C:\Windows\nssm.exe" -Force
 
