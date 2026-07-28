@@ -26,3 +26,4 @@ Thumbs.db
 # Build files
 *.class
 *.jar
+!deploy/backend/*.jar
