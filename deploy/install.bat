@@ -26,15 +26,23 @@ echo      Done.
 echo [2/7] Downloading and installing Java Runtime (JRE 17)...
 where java >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    echo      Downloading JRE 17 from Adoptium...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi' -OutFile '%TEMP%\jre17.msi'"
+    if not exist "%TEMP%\jre17.msi" (
+        echo      Downloading JRE 17 from Adoptium...
+        curl -L -o "%TEMP%\jre17.msi" "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi"
+    )
     if exist "%TEMP%\jre17.msi" (
+        echo      Installing JRE 17...
         msiexec /i "%TEMP%\jre17.msi" ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /quiet /norestart
-        timeout /t 30 /nobreak >nul
+        echo      Waiting for installation to finish...
+        timeout /t 45 /nobreak >nul
         del "%TEMP%\jre17.msi" >nul 2>&1
         echo      JRE 17 installed.
     ) else (
-        echo      WARNING: Could not download JRE. If Java is already installed, continue.
+        echo      ERROR: Could not download JRE 17.
+        echo      Please download manually from: https://adoptium.net/temurin/releases/
+        echo      Install the JRE 17 MSI for Windows x64, then re-run this script.
+        pause
+        exit /b 1
     )
 ) else (
     echo      Java already installed.
@@ -42,16 +50,20 @@ if %ERRORLEVEL% neq 0 (
 
 echo [3/7] Downloading and installing XAMPP (MySQL + Apache)...
 if not exist "C:\xampp\xampp-control.exe" (
-    echo      Downloading XAMPP...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://sourceforge.net/projects/xampp/files/XAMPP%%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download' -OutFile '%TEMP%\xampp-installer.exe'"
+    if not exist "%TEMP%\xampp-installer.exe" (
+        echo      Downloading XAMPP (this may take a few minutes)...
+        curl -L -o "%TEMP%\xampp-installer.exe" "https://sourceforge.net/projects/xampp/files/XAMPP%%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download"
+    )
     if exist "%TEMP%\xampp-installer.exe" (
         echo      Installing XAMPP (this may take a few minutes)...
         "%TEMP%\xampp-installer.exe" --unattendedmodeui none --installer-language en --install_dir C:\xampp --components "mysql,apache,php" --mode unattended
+        echo      Waiting for XAMPP installation...
         timeout /t 60 /nobreak >nul
         del "%TEMP%\xampp-installer.exe" >nul 2>&1
         echo      XAMPP installed.
     ) else (
-        echo      ERROR: Could not download XAMPP. Please install manually from https://www.apachefriends.org/
+        echo      ERROR: Could not download XAMPP.
+        echo      Please install manually from: https://www.apachefriends.org/
         echo      Press any key after installing XAMPP...
         pause >nul
     )
@@ -60,9 +72,12 @@ if not exist "C:\xampp\xampp-control.exe" (
 )
 
 echo [4/7] Starting MySQL and creating database...
-if exist "C:\xampp\mysql\bin\mysql.exe" (
-    net start MySQL80 >nul 2>&1
+:: Start XAMPP MySQL service
+if exist "C:\xampp\xampp_start.exe" (
+    "C:\xampp\xampp_start.exe" mysql >nul 2>&1
     timeout /t 5 /nobreak >nul
+)
+if exist "C:\xampp\mysql\bin\mysql.exe" (
     "C:\xampp\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS pointagepro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>nul
     echo      Database 'pointagepro' ready.
 ) else (
@@ -72,7 +87,7 @@ if exist "C:\xampp\mysql\bin\mysql.exe" (
 echo [5/7] Copying frontend files to Apache...
 if exist "C:\xampp\htdocs" (
     if not exist "C:\xampp\htdocs\pointagepro" mkdir "C:\xampp\htdocs\pointagepro"
-    xcopy /E /Y /Q "%DEPLOY_DIR%frontend\*" "C:\xampp\htdocs\pointagepro\" >nul
+    xcopy /E /Y /Q /H "%DEPLOY_DIR%frontend\*" "C:\xampp\htdocs\pointagepro\" >nul
     echo      Frontend deployed to http://localhost/pointagepro/
 ) else (
     echo      WARNING: C:\xampp\htdocs not found. Copy frontend files manually.
@@ -83,20 +98,25 @@ copy /Y "%DEPLOY_DIR%backend\pointagepro.jar" "%INSTALL_DIR%\backend\pointagepro
 echo      Backend JAR copied to %INSTALL_DIR%\backend\
 
 echo [7/7] Registering backend as Windows service...
+:: Check if nssm is already available
 where nssm >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    echo      Downloading NSSM...
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nssm.cc/release/nssm-2.24.zip' -OutFile '%TEMP%\nssm.zip'"
-    if exist "%TEMP%\nssm.zip" (
-        powershell -Command "Expand-Archive -Path '%TEMP%\nssm.zip' -DestinationPath '%TEMP%\nssm' -Force"
-        copy /Y "%TEMP%\nssm\nssm-2.24\win64\nssm.exe" "%INSTALL_DIR%\nssm.exe" >nul
-        copy /Y "%TEMP%\nssm\nssm-2.24\win64\nssm.exe" "C:\Windows\nssm.exe" >nul
-        del "%TEMP%\nssm.zip" >nul 2>&1
-        rmdir /S /Q "%TEMP%\nssm" >nul 2>&1
-        echo      NSSM downloaded.
-    ) else (
-        echo      ERROR: Could not download NSSM.
-        echo      Download manually from https://nssm.cc/download and put nssm.exe in C:\PointagePro\
+    if not exist "%INSTALL_DIR%\nssm.exe" (
+        echo      Downloading NSSM...
+        curl -L -o "%TEMP%\nssm.zip" "https://nssm.cc/release/nssm-2.24.zip"
+        if exist "%TEMP%\nssm.zip" (
+            powershell -Command "Expand-Archive -Path '%TEMP%\nssm.zip' -DestinationPath '%TEMP%\nssm' -Force"
+            if exist "%TEMP%\nssm\nssm-2.24\win64\nssm.exe" (
+                copy /Y "%TEMP%\nssm\nssm-2.24\win64\nssm.exe" "%INSTALL_DIR%\nssm.exe" >nul
+                copy /Y "%TEMP%\nssm\nssm-2.24\win64\nssm.exe" "C:\Windows\nssm.exe" >nul
+                echo      NSSM downloaded.
+            )
+            del "%TEMP%\nssm.zip" >nul 2>&1
+            rmdir /S /Q "%TEMP%\nssm" >nul 2>&1
+        ) else (
+            echo      ERROR: Could not download NSSM.
+            echo      Download from https://nssm.cc/download and put nssm.exe in C:\PointagePro\
+        )
     )
 )
 
@@ -119,6 +139,11 @@ if not defined JAVA_PATH (
         if not defined JAVA_PATH set "JAVA_PATH=%%i"
     )
 )
+if not defined JAVA_PATH (
+    for /f "delims=" %%i in ('dir /b /s "C:\Program Files (x86)\Java\*java.exe" 2^>nul') do (
+        if not defined JAVA_PATH set "JAVA_PATH=%%i"
+    )
+)
 
 if defined JAVA_PATH (
     echo      Registering service with java at: !JAVA_PATH!
@@ -133,8 +158,9 @@ if defined JAVA_PATH (
     nssm start PointagePro
     echo      Service 'PointagePro' registered and started.
 ) else (
-    echo      ERROR: Java not found. Please install JRE 17 manually.
-    echo      Then run: nssm install PointagePro "C:\path\to\java.exe" "-jar C:\PointagePro\backend\pointagepro.jar"
+    echo      ERROR: Java not found after installation.
+    echo      Please restart your PC, then re-run this install.bat
+    echo      Or install Java manually and run: nssm install PointagePro "C:\path\to\java.exe" "-jar C:\PointagePro\backend\pointagepro.jar"
 )
 
 echo.
