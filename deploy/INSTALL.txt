@@ -11,7 +11,14 @@ Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\jre17.msi`" ADDLOCAL=Fea
 
 STEP 2: Install XAMPP
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile("https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download", "$env:TEMP\xampp.exe")
-Start-Process "$env:TEMP\xampp.exe" -ArgumentList "--unattendedmodeui none --install_dir C:\xampp --components `"mysql,apache,php`" --mode unattended" -Wait
+
+Double-click $env:TEMP\xampp.exe to run it normally:
+  Click Next > Next > Next
+  Uncheck "Learn more about XAMPP"
+  Click Next > Finish
+
+Then start MySQL and Apache:
+& "C:\xampp\xampp_start.exe"
 
 
 STEP 3: Create Database (wait for XAMPP to finish first)
