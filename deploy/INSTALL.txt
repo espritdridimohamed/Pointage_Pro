@@ -1,0 +1,67 @@
+========================================
+  PointagePro - Installation Commands
+  Run in PowerShell as Administrator
+  (Win+X -> Windows Terminal Admin)
+========================================
+
+STEP 1: Install Java
+curl -L -o "$env:TEMP\jre17.msi" "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi"
+Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\jre17.msi`" ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /quiet /norestart" -Wait
+
+
+STEP 2: Install XAMPP
+curl -L -o "$env:TEMP\xampp.exe" "https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download"
+Start-Process "$env:TEMP\xampp.exe" -ArgumentList "--unattendedmodeui none --install_dir C:\xampp --components `"mysql,apache,php`" --mode unattended" -Wait
+
+
+STEP 3: Create Database (wait for XAMPP to finish first)
+& "C:\xampp\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS pointagepro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+
+STEP 4: Create folders + Copy files manually
+New-Item -ItemType Directory -Force -Path "C:\PointagePro\backend"
+New-Item -ItemType Directory -Force -Path "C:\PointagePro\logs"
+
+Then MANUALLY COPY these files:
+  deploy\backend\pointagepro.jar  -->  C:\PointagePro\backend\
+  deploy\frontend\*               -->  C:\xampp\htdocs\pointagepro\
+
+
+STEP 5: Find Java path (copy the output path)
+Get-Command java | Select-Object -ExpandProperty Source
+
+
+STEP 6: Download NSSM + Register Service
+curl -L -o "$env:TEMP\nssm.zip" "https://nssm.cc/release/nssm-2.24.zip"
+Expand-Archive "$env:TEMP\nssm.zip" -DestinationPath "$env:TEMP\nssm" -Force
+Copy-Item "$env:TEMP\nssm\nssm-2.24\win64\nssm.exe" "C:\Windows\nssm.exe" -Force
+
+Replace JAVA_PATH with the path from Step 5:
+& nssm install PointagePro "PASTE-JAVA-PATH-HERE" "-jar" "C:\PointagePro\backend\pointagepro.jar"
+& nssm set PointagePro AppDirectory "C:\PointagePro"
+& nssm set PointagePro AppStdout "C:\PointagePro\logs\stdout.log"
+& nssm set PointagePro AppStderr "C:\PointagePro\logs\stderr.log"
+& nssm set PointagePro Start SERVICE_AUTO_START
+& nssm start PointagePro
+
+
+STEP 7: Start Apache
+& "C:\xampp\apache_start.bat"
+
+
+DONE!
+Open browser: http://localhost/pointagepro/
+Login: admin / admin000
+
+
+========================================
+  SERVICE MANAGEMENT
+========================================
+
+Check status:   nssm status PointagePro
+Restart:        nssm restart PointagePro
+Stop:           nssm stop PointagePro
+View logs:      notepad C:\PointagePro\logs\stdout.log
+
+
+The service auto-starts on every PC boot!
