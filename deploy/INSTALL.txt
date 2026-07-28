@@ -201,12 +201,32 @@ Click "Start" next to Apache.
 
 
 ============================================
+  STEP 9: OPEN FIREWALL PORTS (for network access)
+============================================
+
+To allow other computers on the network to access PointagePro:
+
+netsh advfirewall firewall add rule name="PointagePro Frontend" dir=in action=allow protocol=TCP localport=80
+netsh advfirewall firewall add rule name="PointagePro Backend" dir=in action=allow protocol=TCP localport=8080
+
+
+============================================
   DONE! TEST THE APPLICATION
 ============================================
 
-Open your web browser and go to:
-
+ON THE COMPANY PC (localhost):
   http://localhost/pointagepro/
+
+FROM ANY OTHER PC ON THE NETWORK:
+  1. Find the company PC's IP address:
+     ipconfig
+     Look for "IPv4 Address" (e.g., 192.168.1.50)
+
+  2. On the owner's laptop, open browser and go to:
+     http://192.168.1.50/pointagepro/
+
+  The owner just needs to type the PC's IP address in the browser!
+  No port needed for the frontend (uses port 80 by default).
 
 Login credentials:
   Username: admin
