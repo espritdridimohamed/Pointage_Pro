@@ -1,0 +1,127 @@
+<div class="dashboard page-animate">
+  @if (loading) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Chargement du tableau de bord...</p>
+    </div>
+  }
+
+  <!-- Welcome Section -->
+  <div class="welcome-section">
+    <div class="welcome-text">
+      <h1>{{ greeting }} 👋</h1>
+      <p>{{ subtitle }}</p>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    @for (stat of stats; track stat.label) {
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon" [style.background]="stat.bgColor">
+            <mat-icon [style.color]="stat.color">{{ stat.icon }}</mat-icon>
+          </div>
+          <div class="stat-trend" [class.trend-up]="stat.trendUp" [class.trend-down]="!stat.trendUp">
+            <mat-icon>{{ stat.trendUp ? 'trending_up' : 'trending_down' }}</mat-icon>
+            <span>{{ stat.trend }}</span>
+          </div>
+        </div>
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+        <svg class="sparkline" viewBox="0 0 80 30" preserveAspectRatio="none">
+          <path [attr.d]="getSparklinePath(stat.sparkline)" fill="none" [attr.stroke]="stat.color" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    }
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <!-- Weekly Presence Chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <h3>Présence Hebdomadaire</h3>
+          <p>Derniers 7 jours</p>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas baseChart
+          type="bar"
+          [data]="weeklyChartData"
+          [options]="weeklyChartOptions">
+        </canvas>
+      </div>
+    </div>
+
+    <!-- Daily Summary -->
+    <div class="summary-card">
+      <div class="summary-header">
+        <h3>Résumé du Jour</h3>
+        <p>{{ todayLabel }}</p>
+      </div>
+      <div class="summary-list">
+        @for (item of summaryItems; track item.label) {
+          <div class="summary-item">
+            <div class="summary-left">
+              <span class="summary-dot" [style.background]="item.dot"></span>
+              <span class="summary-label">{{ item.label }}</span>
+            </div>
+            <span class="summary-value" [style.color]="item.color">{{ item.value }}</span>
+          </div>
+        }
+      </div>
+      <div class="productivity-box">
+        <span class="productivity-label">Productivité globale</span>
+        <span class="productivity-value">{{ productivity }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Attendances -->
+  <div class="recent-card">
+    <div class="recent-header">
+      <div>
+        <h3>Pointages Récents</h3>
+        <p>Aujourd'hui — {{ todayLabel }}</p>
+      </div>
+      <a class="view-all" href="javascript:void(0)">Voir tout →</a>
+    </div>
+    <div class="recent-table-wrapper">
+      <table class="recent-table">
+        <thead>
+          <tr>
+            <th>EMPLOYÉ</th>
+            <th>POSTE</th>
+            <th>HEURE ENTRÉE</th>
+            <th>HEURE SORTIE</th>
+            <th>HEURES TRAVAILLÉES</th>
+            <th>STATUT</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (emp of recentAttendances; track emp.name) {
+            <tr>
+              <td class="emp-cell">
+                <div class="emp-avatar" [style.background]="emp.color">
+                  {{ emp.initials }}
+                </div>
+                <span class="emp-name">{{ emp.name }}</span>
+              </td>
+              <td>{{ emp.position }}</td>
+              <td>{{ emp.checkIn }}</td>
+              <td>{{ emp.checkOut }}</td>
+              <td>{{ emp.hours }}</td>
+              <td>
+                <span class="status-chip" [ngClass]="getStatusClass(emp.status)">
+                  {{ emp.status }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

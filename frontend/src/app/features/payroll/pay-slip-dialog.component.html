@@ -1,0 +1,171 @@
+<div class="payslip-dialog">
+  <div class="dialog-header">
+    <div class="header-left">
+      <div class="header-icon">
+        <mat-icon>description</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2>Fiche de Paie</h2>
+        <p>{{ record.firstName }} {{ record.lastName }} — {{ periodLabel }}</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-print" (click)="onPrint()">
+        <mat-icon>print</mat-icon>
+        Imprimer / PDF
+      </button>
+      <button class="close-btn" (click)="onClose()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="dialog-body">
+    <div class="inner-card">
+      <div class="company-section">
+        <div class="company-info">
+          <div class="company-row">
+            @if (companyLogo) {
+              <img [src]="companyLogo" class="company-logo" [alt]="companyName">
+            }
+            <div class="company-text">
+              <h3 class="company-name">{{ companyNameShort }}</h3>
+              <p class="company-details">{{ companyName }} — {{ companyAddress }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="ref-info">
+          <span class="ref-title">FICHE DE PAIE</span>
+          <span class="ref-detail">Période : {{ periodLabel }}</span>
+          <span class="ref-detail">Réf. {{ refNumber }}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-header">SALARIÉ</div>
+          <div class="info-card-body">
+            <div class="employee-row">
+              @if (employeePhoto) {
+                <img [src]="employeePhoto" class="avatar-photo" [alt]="record.firstName">
+              } @else {
+                <div class="avatar-sm" [style.background]="record.avatarColor">{{ record.initials }}</div>
+              }
+              <div>
+                <span class="employee-name">{{ record.firstName }} {{ record.lastName }}</span>
+                <span class="employee-position">{{ record.position }}</span>
+                <span class="employee-contract">{{ record.contractType || '' }} · {{ record.department || '' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">INFORMATIONS PAIE</div>
+          <div class="info-card-body">
+            <div class="info-row">
+              <span class="info-label">Période :</span>
+              <span class="info-value">{{ periodLabel }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Date de paiement :</span>
+              <span class="info-value">{{ paymentDate }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Mode :</span>
+              <span class="info-value">Virement bancaire</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Jours travaillés :</span>
+              <span class="info-value">{{ workedDays }} / {{ totalWorkDays }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="payslip-table">
+          <thead>
+            <tr>
+              <th>LIBELLÉ</th>
+              <th>BASE</th>
+              <th>TAUX</th>
+              <th>MONTANT (DT)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="section-row">
+              <td colspan="4">RÉMUNÉRATIONS</td>
+            </tr>
+            @for (line of remunerations; track line.label) {
+              <tr>
+                <td>{{ line.label }}</td>
+                <td>{{ line.base }}</td>
+                <td>{{ line.taux }}</td>
+                <td class="text-green">
+                  +{{ fmt(line.montant) }}
+                </td>
+              </tr>
+            }
+            <tr class="section-row">
+              <td colspan="4">COTISATIONS &amp; RETENUES SALARIALES</td>
+            </tr>
+            @for (line of cotisations; track line.label) {
+              <tr>
+                <td>{{ line.label }}</td>
+                <td>{{ line.base }}</td>
+                <td>{{ line.taux }}</td>
+                <td class="text-red">
+                  -{{ fmt(line.montant) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="summary-box">
+        <div class="summary-left">
+          <span class="summary-label">SALAIRE NET À PAYER</span>
+          <span class="summary-amount">{{ fmt(netSalary) }}</span>
+          <span class="summary-letter">{{ getNetLetter() }}</span>
+        </div>
+        <div class="summary-right">
+          <div class="summary-row">
+            <span class="summary-detail-label">Salaire brut</span>
+            <span class="summary-detail-value blue">{{ fmt(brutTotal) }} DT</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-detail-label">Total cotisations</span>
+            <span class="summary-detail-value red">{{ fmt(totalRetenues) }} DT</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="signatures-divider"></div>
+
+      <div class="signatures">
+        <div class="signature-block">
+          <span class="signature-label">Signature de l'employeur</span>
+          <div class="signature-line"></div>
+          <span class="signature-name">{{ companyNameShort }}</span>
+        </div>
+        <div class="signature-block">
+          <span class="signature-label">Signature du salarié (lu et approuvé)</span>
+          <div class="signature-line"></div>
+          <span class="signature-name">{{ record.firstName }} {{ record.lastName }}</span>
+        </div>
+      </div>
+
+      <div class="company-info-bottom">
+        <strong>{{ companyName }}</strong>
+        <span class="sep">·</span>
+        @if (companyAddress) { <span>{{ companyAddress }}</span> <span class="sep">·</span> }
+        @if (companySector) { <span>{{ companySector }}</span> <span class="sep">·</span> }
+        @if (companyEmail) { <span>{{ companyEmail }}</span> <span class="sep">·</span> }
+        @if (companyPhone) { <span>{{ companyPhone }}</span> }
+      </div>
+    </div>
+  </div>
+</div>

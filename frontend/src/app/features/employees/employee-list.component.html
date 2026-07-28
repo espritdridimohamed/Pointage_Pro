@@ -1,0 +1,92 @@
+<div class="employee-page page-animate">
+  <div class="page-header">
+    <div>
+      <h1>Employés</h1>
+      <p class="subtitle">{{ totalCount }} employés enregistrés</p>
+    </div>
+    <button mat-raised-button class="add-btn" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      Ajouter Employé
+    </button>
+  </div>
+
+  <div class="filters-bar">
+    <div class="search-wrapper">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input type="text" class="search-input" placeholder="Rechercher un employé..." (input)="onSearch($event)">
+    </div>
+
+    <div class="filter-icon">
+      <mat-icon>filter_list</mat-icon>
+    </div>
+
+    <div class="department-filters">
+      <button class="filter-chip" [class.active]="selectedDepartment === ''" (click)="filterByDepartment('')">
+        Tous
+      </button>
+      @for (dept of departments; track dept) {
+        <button class="filter-chip" [class.active]="selectedDepartment === dept" (click)="filterByDepartment(dept)">
+          {{ dept }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="employees-grid">
+    @for (emp of filteredEmployees; track emp.id) {
+      <div class="employee-card" (mouseenter)="onCardHover(emp.id)" (mouseleave)="onCardHover(null)">
+        <div class="card-top" (click)="openDetailDialog(emp)" style="cursor:pointer">
+          <div class="avatar-wrapper">
+            @if (emp.photo) {
+              <img [src]="emp.photo" [alt]="emp.firstName" class="avatar-img">
+            } @else {
+              <div class="avatar-circle" [style.background]="getAvatarColor(emp.firstName + emp.lastName)">
+                {{ getInitials(emp.firstName, emp.lastName) }}
+              </div>
+            }
+            <span class="status-dot" [ngClass]="getStatusClass(emp.status)"></span>
+          </div>
+          <span class="status-badge" [ngClass]="getStatusClass(emp.status)">
+            {{ getStatusLabel(emp.status) }}
+          </span>
+        </div>
+
+        <div class="card-info" (click)="openDetailDialog(emp)" style="cursor:pointer">
+          <h3 class="card-name">{{ emp.firstName }} {{ emp.lastName }}</h3>
+          <p class="card-position">{{ emp.position || '—' }}</p>
+
+          @if (emp.department) {
+            <span class="department-chip" [style.background]="getDepartmentColor(emp.department) + '18'" [style.color]="getDepartmentColor(emp.department)">
+              {{ emp.department }}
+            </span>
+          }
+
+          <div class="card-details">
+            @if (emp.phone) {
+              <div class="detail-row">
+                <mat-icon>phone</mat-icon>
+                <span>{{ emp.phone }}</span>
+              </div>
+            }
+            @if (emp.email) {
+              <div class="detail-row">
+                <mat-icon>email</mat-icon>
+                <span>{{ emp.email }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card-hover-actions" [class.visible]="hoveredCard === emp.id">
+          <button class="action-edit" (click)="openEditDialog(emp)">
+            <mat-icon>edit</mat-icon>
+            Modifier
+          </button>
+          <button class="action-delete" (click)="deleteEmployee(emp)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,209 @@
+<div class="reports-page page-animate">
+  @if (loading) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Chargement du rapport...</p>
+    </div>
+  }
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-text">
+      <h1 class="page-title">Rapports & Analytiques</h1>
+      <p class="page-subtitle">Analyse de performance et suivi des employés</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-outline" (click)="exportCSV()">
+        <mat-icon>download</mat-icon>
+        Exporter CSV
+      </button>
+      <button class="btn-primary" (click)="downloadPDF()">
+        <mat-icon>download</mat-icon>
+        Télécharger PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="filter-group">
+      <span class="filter-label">Période</span>
+      <div class="period-toggle">
+        <button [class.active]="selectedPeriod === 'Mensuel'" (click)="selectedPeriod = 'Mensuel'; onPeriodChange()">Mensuel</button>
+        <button [class.active]="selectedPeriod === 'Annuel'" (click)="selectedPeriod = 'Annuel'; onPeriodChange()">Annuel</button>
+      </div>
+    </div>
+    @if (selectedPeriod === 'Mensuel') {
+      <div class="filter-group">
+        <span class="filter-label">Mois</span>
+        <div class="period-select">
+          <select [(ngModel)]="selectedMonth" (ngModelChange)="onMonthChange()">
+            @for (m of months; track m) {
+              <option [value]="m">{{ m }}</option>
+            }
+          </select>
+          <mat-icon class="select-icon">unfold_more</mat-icon>
+        </div>
+      </div>
+    } @else {
+      <div class="filter-group">
+        <span class="filter-label">Année</span>
+        <div class="period-select">
+          <select [(ngModel)]="selectedYear" (ngModelChange)="onYearChange()">
+            @for (y of years; track y) {
+              <option [value]="y">{{ y }}</option>
+            }
+          </select>
+          <mat-icon class="select-icon">unfold_more</mat-icon>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    @for (kpi of kpis; track kpi.label) {
+      <div class="kpi-card">
+        <div class="kpi-icon-wrap" [style.background]="kpi.color + '12'" [style.color]="kpi.color">
+          <mat-icon>{{ kpi.icon }}</mat-icon>
+        </div>
+        <div class="kpi-content">
+          <p class="kpi-value" [style.color]="kpi.color">{{ kpi.value }}</p>
+          <p class="kpi-label">{{ kpi.label }}</p>
+          <p class="kpi-sub">{{ kpi.sub }}</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Charts: Row 1 -->
+  <div class="charts-row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Taux de Présence</h3>
+        <span class="chart-badge blue">Ligne</span>
+      </div>
+      <div class="chart-container">
+        <canvas baseChart type="line" [data]="presenceChartData" [options]="presenceChartOptions"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Retards par Période</h3>
+        <span class="chart-badge amber">Barres</span>
+      </div>
+      <div class="chart-container">
+        <canvas baseChart type="bar" [data]="lateChartData" [options]="lateChartOptions"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts: Row 2 -->
+  <div class="charts-row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Heures Supplémentaires</h3>
+        <span class="chart-badge purple">Ligne</span>
+      </div>
+      <div class="chart-container">
+        <canvas baseChart type="line" [data]="overtimeChartData" [options]="overtimeChartOptions"></canvas>
+      </div>
+    </div>
+
+    @if (selectedPeriod === 'Annuel') {
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Évolution Masse Salariale</h3>
+          <span class="chart-badge green">Ligne</span>
+        </div>
+        <div class="chart-container">
+          <canvas baseChart type="line" [data]="masseChartData" [options]="masseChartOptions"></canvas>
+        </div>
+      </div>
+    } @else {
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Répartition des Absences</h3>
+          <span class="chart-badge red">Donut</span>
+        </div>
+        <div class="chart-container donut-container">
+          <canvas baseChart type="doughnut" [data]="absenceChartData" [options]="absenceChartOptions"></canvas>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Annual only: Absence doughnut -->
+  @if (selectedPeriod === 'Annuel') {
+    <div class="charts-row-2">
+      <div class="chart-card span-full">
+        <div class="chart-header">
+          <h3 class="chart-title">Répartition des Absences</h3>
+          <span class="chart-badge red">Donut</span>
+        </div>
+        <div class="chart-container donut-container donut-wide">
+          <canvas baseChart type="doughnut" [data]="absenceChartData" [options]="absenceChartOptions"></canvas>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Employee Detail Table -->
+  @if (d.employeeStats.length > 0) {
+    <div class="section-card">
+      <div class="section-header">
+        <h3>Détail par Employé</h3>
+        <span class="section-count">{{ d.employeeStats.length }} employé(s)</span>
+      </div>
+      <div class="table-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Employé</th>
+              <th>Département</th>
+              <th class="num">Jours Présent</th>
+              <th class="num">Jours Retard</th>
+              <th class="num">Jours Absent</th>
+              <th class="num">Heures Sup.</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (emp of d.employeeStats; track emp.employeeId) {
+              <tr>
+                <td class="emp-cell">
+                  <span class="emp-name">{{ emp.firstName }} {{ emp.lastName }}</span>
+                </td>
+                <td>
+                  <span class="dept-badge">{{ emp.department || '—' }}</span>
+                </td>
+                <td class="num"><span class="val-green">{{ emp.daysPresent }}</span></td>
+                <td class="num">
+                  @if (emp.daysLate > 0) {
+                    <span class="val-amber">{{ emp.daysLate }}</span>
+                  } @else {
+                    <span class="val-muted">0</span>
+                  }
+                </td>
+                <td class="num">
+                  @if (emp.daysAbsent > 0) {
+                    <span class="val-red">{{ emp.daysAbsent }}</span>
+                  } @else {
+                    <span class="val-muted">0</span>
+                  }
+                </td>
+                <td class="num">
+                  @if (emp.overtimeHours > 0) {
+                    <span class="val-purple">{{ emp.overtimeHours }}h</span>
+                  } @else {
+                    <span class="val-muted">0h</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

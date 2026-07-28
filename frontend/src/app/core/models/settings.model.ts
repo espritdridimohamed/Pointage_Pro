@@ -1,0 +1,36 @@
+export interface CompanySettings {
+  id?: number;
+  companyName: string;
+  companySector: string;
+  companyAddress: string;
+  companyEmail: string;
+  companyPhone: string;
+  companyLogo: string | null;
+  workStartTime?: string;
+  workEndTime?: string;
+  workDaysPerWeek?: number;
+  workDays?: string;
+  lateGraceMinutes: number;
+  monthlyWorkHours?: number;
+  overtimeRate: number;
+  overtimeThresholdHours?: number;
+  currency?: string;
+  payDay?: number;
+  cnssRate: number;
+  cnssEmployerRate: number;
+  cnssCeiling: number;
+  assuranceRate: number;
+  irTranche1: number;
+  irRate1: number;
+  irTranche2: number;
+  irRate2: number;
+  irTranche3: number;
+  irRate3: number;
+  irTranche4: number;
+  irRate4: number;
+  irTranche5: number;
+  irRate5: number;
+  irAbatement: number;
+  language: string;
+  theme: string;
+}

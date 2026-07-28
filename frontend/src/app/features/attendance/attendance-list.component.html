@@ -1,0 +1,239 @@
+<div class="attendance-page page-animate">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-text">
+      <h1>Gestion du Pointage RFID</h1>
+      <p>Données reçues des terminaux ESP32 via réseau WiFi
+        <span class="terminal-badge">
+          <span class="dot online"></span>
+          {{ onlineTerminals }} terminal(s) en ligne
+        </span>
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-sync" (click)="onSync()" [disabled]="syncing">
+        <mat-icon [class.spinning]="syncing">sync</mat-icon>
+        {{ syncing ? 'Synchronisation...' : 'Sync il y a ' + lastSync + 's' }}
+      </button>
+      <button class="btn-export" (click)="exportPdf()">
+        <mat-icon>picture_as_pdf</mat-icon>
+        Exporter PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <mat-icon>groups</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ totalEmployes }}</span>
+        <span class="stat-label">Total Employés</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">
+        <mat-icon>person_check</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ presents }}</span>
+        <span class="stat-label">Présents</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">
+        <mat-icon>person_cancel</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ absents }}</span>
+        <span class="stat-label">Absents</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">
+        <mat-icon>report_problem</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ retards }}</span>
+        <span class="stat-label">Retards</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content + Sidebar -->
+  <div class="content-layout">
+    <div class="main-content">
+      <!-- Filters -->
+      <div class="filters-row">
+        <div class="date-picker-wrapper">
+          <mat-icon class="date-icon">calendar_today</mat-icon>
+          <input type="date" class="date-input" [value]="getSelectedDateInput()" (change)="onDateChange($event)">
+        </div>
+        <div class="search-wrapper">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input type="text" class="search-input" placeholder="Nom ou badge RFID..." (input)="onSearch($event)">
+        </div>
+        <div class="status-filters">
+          <button class="filter-chip" [class.active]="statusFilter === 'tous'" (click)="filterByStatus('tous')">Tous</button>
+          <button class="filter-chip" [class.active]="statusFilter === 'present'" (click)="filterByStatus('present')">Présent</button>
+          <button class="filter-chip" [class.active]="statusFilter === 'absent'" (click)="filterByStatus('absent')">Absent</button>
+          <button class="filter-chip" [class.active]="statusFilter === 'retard'" (click)="filterByStatus('retard')">Retard</button>
+        </div>
+      </div>
+
+      <!-- History Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <h3>Historique des Pointages</h3>
+            <p>{{ recordCountLabel }}</p>
+          </div>
+          <span class="rfid-label">
+            <mat-icon>credit_card</mat-icon>
+            Système RFID ESP32
+          </span>
+        </div>
+
+        <table class="attendance-table">
+          <thead>
+            <tr>
+              <th>BADGE RFID</th>
+              <th>EMPLOYÉ</th>
+              <th>POSTE</th>
+              <th>ENTRÉE</th>
+              <th>SORTIE</th>
+              <th>HEURES</th>
+              <th>STATUT</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of filteredRecords; track record.rfidBadge) {
+              <tr>
+                <td>
+                  <span class="badge-code">
+                    <mat-icon class="badge-icon">credit_card</mat-icon>
+                    {{ record.rfidBadge }}
+                  </span>
+                </td>
+                <td>
+                  <span class="emp-name">{{ record.firstName }}<br>{{ record.lastName }}</span>
+                </td>
+                <td>
+                  <span class="emp-position">{{ record.position }}</span>
+                </td>
+                <td>
+                  <span class="time-cell" [class.has-time]="record.entryTime">{{ record.entryTime || '—' }}</span>
+                </td>
+                <td>
+                  <span class="time-cell" [class.has-time]="record.exitTime">{{ record.exitTime || '—' }}</span>
+                </td>
+                <td>
+                  <span class="hours-cell">{{ record.hoursWorked }}</span>
+                </td>
+                <td>
+                  <span class="status-badge" [ngClass]="'status-' + record.status">
+                    <span class="status-dot"></span>
+                    {{ getStatusLabel(record.status) }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" style="text-align:center; padding:32px; color:#94a3b8;">
+                  Aucun enregistrement pour cette date
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="sidebar">
+      <!-- Terminals -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          <h3>Terminaux RFID</h3>
+          <span class="sidebar-badge">ESP32</span>
+        </div>
+        <div class="terminal-list">
+          @for (terminal of terminals; track terminal.id) {
+            <div class="terminal-item">
+              <div class="terminal-icon">
+                <mat-icon [class.offline]="terminal.status === 'offline'">wifi</mat-icon>
+              </div>
+              <div class="terminal-info">
+                <div class="terminal-top">
+                  <span class="terminal-id">{{ terminal.id }}</span>
+                  <span class="terminal-status" [class.online]="terminal.status === 'online'" [class.offline]="terminal.status === 'offline'">
+                    {{ terminal.status === 'online' ? 'En ligne' : 'Hors ligne' }}
+                  </span>
+                </div>
+                <span class="terminal-name">{{ terminal.name }}</span>
+                <div class="terminal-meta">
+                  <span>Dernier ping : {{ formatLastPing(terminal.lastPing) }}</span>
+                  <span>{{ terminal.scansToday }} scans aujourd'hui</span>
+                </div>
+                @if (terminal.status === 'online') {
+                  <div class="terminal-health">
+                    <span class="health-item">
+                      <mat-icon class="health-icon">signal_cellular_alt</mat-icon>
+                      {{ formatSignal(terminal.rssi) }}
+                    </span>
+                    <span class="health-item">
+                      <mat-icon class="health-icon">memory</mat-icon>
+                      {{ formatMemory(terminal.freeMemory) }}
+                    </span>
+                    <span class="health-item">
+                      <mat-icon class="health-icon">schedule</mat-icon>
+                      {{ formatUptime(terminal.uptimeSeconds) }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="terminal-empty">
+              <mat-icon>device_hub</mat-icon>
+              <span>Aucun terminal enregistré</span>
+              <span class="terminal-empty-hint">Connectez un ESP32 pour commencer</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Live Feed -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          <h3>Flux RFID en direct</h3>
+          <span class="live-badge">
+            <span class="live-dot"></span>
+            Live
+          </span>
+        </div>
+        <div class="live-feed">
+          @for (entry of liveFeed; track entry.timestamp + entry.rfidBadge) {
+            <div class="feed-item">
+              <div class="feed-pulse" [class.entree]="entry.type === 'entree'" [class.sortie]="entry.type === 'sortie'">
+                <mat-icon>{{ entry.type === 'entree' ? 'login' : 'logout' }}</mat-icon>
+              </div>
+              <div class="feed-info">
+                <span class="feed-name">{{ entry.firstName }} {{ entry.lastName }}</span>
+                <span class="feed-badge">{{ entry.rfidBadge }} · <span [class.text-green]="entry.type === 'entree'" [class.text-red]="entry.type === 'sortie'">{{ entry.type === 'entree' ? 'Entrée' : 'Sortie' }}</span></span>
+              </div>
+              <span class="feed-time">{{ entry.timestamp }}</span>
+            </div>
+          } @empty {
+            <div class="feed-empty">
+              <mat-icon>radio_button_unchecked</mat-icon>
+              <span>Aucun scan aujourd'hui</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,516 @@
+.payslip-dialog {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #0F172A 0%, #1e293b 100%);
+  padding: 24px 32px;
+  border-radius: 24px 24px 0 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  mat-icon {
+    color: #60A5FA;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.header-text {
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  p {
+    font-size: 12px;
+    color: #94A3B8;
+    margin: 2px 0 0;
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #2563EB;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+
+  mat-icon {
+    font-size: 17px;
+    width: 17px;
+    height: 17px;
+  }
+
+  &:hover {
+    background: #1D4ED8;
+  }
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.dialog-body {
+  padding: 32px;
+  max-height: 500px;
+  overflow-y: auto;
+  background: #F1F5F9;
+}
+
+.inner-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 32px 36px 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #E5E7EB;
+}
+
+.company-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.company-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.company-logo {
+  height: 56px;
+  width: 56px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.company-name {
+  font-size: 27px;
+  font-weight: 800;
+  color: #0F1420;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.company-details {
+  font-size: 13px;
+  color: #64748B;
+  margin: 2px 0 0;
+  line-height: 1.5;
+
+  &:last-child {
+    color: #94A3B8;
+  }
+}
+
+.ref-info {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ref-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #2563EB;
+  letter-spacing: 0.04em;
+}
+
+.ref-detail {
+  font-size: 13px;
+  color: #64748B;
+}
+
+.divider {
+  height: 1px;
+  background: #E2E8F0;
+  margin-bottom: 24px;
+}
+
+.info-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 26px;
+}
+
+.info-card {
+  background: #F8FAFC;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.info-card-header {
+  padding: 11px 18px;
+  background: #F1F5F9;
+  border-bottom: 1px solid #E5E7EB;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.info-card-body {
+  padding: 16px 18px;
+}
+
+.employee-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatar-sm {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.employee-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0F1420;
+}
+
+.employee-position {
+  display: block;
+  font-size: 13px;
+  color: #64748B;
+}
+
+.employee-contract {
+  display: block;
+  font-size: 12px;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+.info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 5px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.info-label {
+  font-size: 13px;
+  color: #64748B;
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F1420;
+}
+
+.table-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #E5E7EB;
+  margin-bottom: 26px;
+}
+
+.payslip-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead tr {
+    background: linear-gradient(135deg, #0F172A 0%, #1e293b 100%);
+  }
+
+  th {
+    padding: 13px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    white-space: nowrap;
+
+    &:nth-child(2),
+    &:nth-child(3) {
+      text-align: center;
+    }
+
+    &:last-child {
+      text-align: right;
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #F1F5F9;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  td {
+    padding: 14px 18px;
+    font-size: 14px;
+    color: #374151;
+
+    &:nth-child(2),
+    &:nth-child(3) {
+      text-align: center;
+      color: #64748B;
+    }
+
+    &:last-child {
+      text-align: right;
+      font-weight: 700;
+      font-size: 15px;
+    }
+  }
+
+  .section-row td {
+    background: #F1F5F9;
+    font-size: 12px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 10px 18px;
+    text-align: left !important;
+  }
+}
+
+.text-green {
+  color: #16A34A !important;
+}
+
+.text-red {
+  color: #DC2626 !important;
+}
+
+.summary-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #111827;
+  border-radius: 14px;
+  padding: 26px 30px;
+  margin-bottom: 28px;
+}
+
+.summary-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.summary-amount {
+  font-size: 38px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+
+  &::after {
+    content: ' DT';
+    font-size: 18px;
+    font-weight: 600;
+    color: #9CA3AF;
+  }
+}
+
+.summary-letter {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.summary-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: right;
+}
+
+.summary-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summary-detail-label {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.summary-detail-value {
+  font-size: 16px;
+  font-weight: 700;
+
+  &.blue {
+    color: #60A5FA;
+  }
+
+  &.red {
+    color: #F87171;
+  }
+}
+
+.signatures-divider {
+  height: 1px;
+  background: #E2E8F0;
+  margin-bottom: 28px;
+}
+
+.signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+}
+
+.signature-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.signature-label {
+  font-size: 13px;
+  color: #94A3B8;
+  font-weight: 500;
+  margin-bottom: 40px;
+}
+
+.signature-line {
+  height: 1px;
+  background: #CBD5E1;
+  width: 100%;
+}
+
+.signature-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748B;
+  margin-top: 8px;
+}
+
+.company-info-bottom {
+  text-align: center;
+  font-size: 12px;
+  color: #64748B;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+
+  strong {
+    color: #0F1420;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .sep {
+    color: #CBD5E1;
+    margin: 0 6px;
+    font-weight: 700;
+  }
+}
+
+.footer-note {
+  text-align: center;
+  font-size: 12px;
+  color: #94A3B8;
+  padding-top: 12px;
+  margin-top: 12px;
+}

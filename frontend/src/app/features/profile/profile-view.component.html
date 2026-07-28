@@ -1,0 +1,482 @@
+<div class="profile-page page-animate">
+  @if (successMessage) {
+    <div class="toast-success">
+      <mat-icon>check_circle</mat-icon>
+      {{ successMessage }}
+    </div>
+  }
+
+  <div class="profile-layout">
+    <!-- ─── Sidebar ─── -->
+    <aside class="profile-sidebar">
+      <div class="sidebar-top">
+        <div class="avatar-wrapper">
+          @if (loading) {
+            <div class="avatar-placeholder"></div>
+          } @else {
+            <img [src]="'https://ui-avatars.com/api/?name=' + (profile.firstName || 'U') + '+' + (profile.lastName || '') + '&background=2563eb&color=fff&size=120'" alt="avatar">
+          }
+          <span class="online-dot"></span>
+        </div>
+        <h2 class="sidebar-name">{{ loading ? '...' : getFullName() }}</h2>
+        <p class="sidebar-role">{{ loading ? '...' : profile.role }}</p>
+        <div class="sidebar-status">
+          <span class="status-dot"></span>
+          En ligne
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        @for (tab of tabs; track tab.label; let i = $index) {
+          <button class="sidebar-tab" [class.active]="activeTab === i" (click)="setActiveTab(i)">
+            <mat-icon>{{ tab.icon }}</mat-icon>
+            <span>{{ tab.label }}</span>
+          </button>
+        }
+      </div>
+    </aside>
+
+    <!-- ─── Content ─── -->
+    <div class="profile-content">
+      @if (loading) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Chargement du profil...</p>
+        </div>
+      } @else {
+
+      <!-- Tab 0: Mon Profil -->
+      @if (activeTab === 0) {
+        <div class="content-section">
+          <div class="section-header">
+            <h3>Mon Profil</h3>
+            <p>Gérez vos informations personnelles</p>
+          </div>
+
+          <div class="profile-card">
+            <div class="card-row">
+              <div class="form-group">
+                <label class="form-label">Prénom</label>
+                <input class="form-input" type="text" [(ngModel)]="profile.firstName">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nom</label>
+                <input class="form-input" type="text" [(ngModel)]="profile.lastName">
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-input" type="email" [(ngModel)]="profile.email">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Téléphone</label>
+                <input class="form-input" type="tel" [(ngModel)]="profile.phone">
+              </div>
+            </div>
+            <div class="card-row single">
+              <div class="form-group">
+                <label class="form-label">Rôle</label>
+                <div class="readonly-badge">
+                  <mat-icon>admin_panel_settings</mat-icon>
+                  {{ profile.role }}
+                </div>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary" (click)="saveProfile()" [disabled]="saving">
+                @if (saving) {
+                  <span class="btn-spinner"></span>
+                } @else {
+                  <mat-icon>save</mat-icon>
+                }
+                {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Tab 1: Sécurité -->
+      @if (activeTab === 1) {
+        <div class="content-section">
+          <div class="section-header">
+            <h3>Sécurité</h3>
+            <p>Protégez votre compte</p>
+          </div>
+
+          <!-- Change Password -->
+          <div class="profile-card">
+            <div class="card-title-row">
+              <mat-icon class="card-icon blue">lock</mat-icon>
+              <h4>Changer le Mot de Passe</h4>
+            </div>
+
+            @if (passwordError) {
+              <div class="alert-error">
+                <mat-icon>error</mat-icon>
+                {{ passwordError }}
+              </div>
+            }
+            @if (passwordSuccess) {
+              <div class="alert-success">
+                <mat-icon>check_circle</mat-icon>
+                {{ passwordSuccess }}
+              </div>
+            }
+
+            <div class="form-group">
+              <label class="form-label">Mot de passe actuel</label>
+              <input class="form-input" type="password" [(ngModel)]="security.currentPassword" placeholder="••••••••">
+            </div>
+            <div class="card-row">
+              <div class="form-group">
+                <label class="form-label">Nouveau mot de passe</label>
+                <input class="form-input" type="password" [(ngModel)]="security.newPassword" placeholder="Min. 6 caractères">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirmer le mot de passe</label>
+                <input class="form-input" type="password" [(ngModel)]="security.confirmPassword" placeholder="Retapez le mot de passe">
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary" (click)="changePassword()" [disabled]="changingPassword">
+                @if (changingPassword) {
+                  <span class="btn-spinner"></span>
+                } @else {
+                  <mat-icon>lock_reset</mat-icon>
+                }
+                {{ changingPassword ? 'Modification...' : 'Modifier le Mot de Passe' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Two-Factor Auth -->
+          <div class="profile-card">
+            <div class="card-title-row">
+              <mat-icon class="card-icon blue">security</mat-icon>
+              <h4>Authentification à Deux Facteurs</h4>
+            </div>
+
+            @if (twoFactorSuccess) {
+              <div class="alert-success">
+                <mat-icon>check_circle</mat-icon>
+                {{ twoFactorSuccess }}
+              </div>
+            }
+
+            @if (!security.twoFactorEnabled && !twoFactorSetupMode) {
+              <div class="toggle-row">
+                <div class="toggle-left">
+                  <div>
+                    <p>Ajoutez une couche de sécurité supplémentaire à votre compte</p>
+                  </div>
+                </div>
+                <button class="btn-primary" (click)="setup2FA()" [disabled]="twoFactorLoading">
+                  @if (twoFactorLoading) {
+                    <span class="btn-spinner"></span>
+                  } @else {
+                    <mat-icon>security</mat-icon>
+                  }
+                  {{ twoFactorLoading ? 'Initialisation...' : 'Activer la 2FA' }}
+                </button>
+              </div>
+            }
+
+            @if (twoFactorSetupMode) {
+              <div class="twofa-setup">
+                <p class="twofa-instructions">Scannez le QR code ci-dessous avec votre application d'authentification (Google Authenticator, Authy, etc.)</p>
+
+                <div class="twofa-qr">
+                  <img [src]="getQrCodeUrl()" alt="QR Code 2FA">
+                </div>
+
+                <div class="twofa-secret-row">
+                  <label class="form-label">Clé secrète (copiez-la manuellement si nécessaire)</label>
+                  <div class="secret-copy-row">
+                    <input class="form-input secret-input" type="text" [value]="twoFactorSecret" readonly>
+                    <button class="btn-icon" (click)="copySecret()" title="Copier la clé">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="twofa-verify">
+                  <label class="form-label">Entrez le code de vérification à 6 chiffres</label>
+                  <div class="twofa-code-row">
+                    <input class="form-input twofa-code-input" type="text" maxlength="6" [(ngModel)]="twoFactorCode" placeholder="000000" autocomplete="one-time-code">
+                    <button class="btn-primary" (click)="verify2FA()" [disabled]="twoFactorLoading || twoFactorCode.length !== 6">
+                      @if (twoFactorLoading) {
+                        <span class="btn-spinner"></span>
+                      } @else {
+                        <mat-icon>check</mat-icon>
+                      }
+                      Vérifier
+                    </button>
+                  </div>
+                </div>
+
+                @if (twoFactorError) {
+                  <div class="alert-error">
+                    <mat-icon>error</mat-icon>
+                    {{ twoFactorError }}
+                  </div>
+                }
+
+                <div class="card-actions">
+                  <button class="btn-secondary" (click)="cancel2FASetup()">Annuler</button>
+                </div>
+              </div>
+            }
+
+            @if (security.twoFactorEnabled && !twoFactorSetupMode) {
+              <div class="toggle-row">
+                <div class="toggle-left">
+                  <div class="twofa-enabled-badge">
+                    <mat-icon style="color: #22c55e;">check_circle</mat-icon>
+                    <span class="badge-green">Activé</span>
+                  </div>
+                  <p>L'authentification à deux facteurs est activée sur votre compte</p>
+                </div>
+              </div>
+
+              @if (!disable2FAMode) {
+                <div class="card-actions">
+                  <button class="btn-danger" (click)="startDisable2FA()">
+                    <mat-icon>shield</mat-icon>
+                    Désactiver la 2FA
+                  </button>
+                </div>
+              } @else {
+                <div class="disable-2fa-form">
+                  <p class="disable-warning">Pour désactiver la 2FA, entrez votre mot de passe et un code validant</p>
+                  <div class="form-group">
+                    <label class="form-label">Mot de passe</label>
+                    <input class="form-input" type="password" [(ngModel)]="disable2FAPassword" placeholder="Votre mot de passe">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Code 2FA</label>
+                    <input class="form-input twofa-code-input" type="text" maxlength="6" [(ngModel)]="disable2FACode" placeholder="000000" autocomplete="one-time-code">
+                  </div>
+                  @if (disable2FAError) {
+                    <div class="alert-error">
+                      <mat-icon>error</mat-icon>
+                      {{ disable2FAError }}
+                    </div>
+                  }
+                  <div class="card-actions">
+                    <button class="btn-secondary" (click)="cancelDisable2FA()">Annuler</button>
+                    <button class="btn-danger" (click)="disable2FA()" [disabled]="disable2FALoading">
+                      @if (disable2FALoading) {
+                        <span class="btn-spinner"></span>
+                      } @else {
+                        <mat-icon>block</mat-icon>
+                      }
+                      {{ disable2FALoading ? 'Désactivation...' : 'Désactiver' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Active Sessions -->
+          <div class="profile-card">
+            <div class="card-title-row">
+              <mat-icon class="card-icon blue">devices</mat-icon>
+              <h4>Sessions Actives</h4>
+              @if (sessions.length > 0) {
+                <button class="btn-revoke-all" (click)="revokeAllSessions()">
+                  <mat-icon>power_settings_new</mat-icon>
+                  Déconnecter toutes les sessions
+                </button>
+              }
+            </div>
+            @if (sessionsLoading) {
+              <div class="loading-inline">
+                <div class="spinner small"></div>
+                <p>Chargement des sessions...</p>
+              </div>
+            } @else if (sessions.length === 0) {
+              <p class="empty-text">Aucune session active</p>
+            } @else {
+              <div class="sessions-list">
+                @for (session of sessions; track session.id) {
+                  <div class="session-item">
+                    <div class="session-info">
+                      <div class="session-device">{{ session.deviceInfo }}</div>
+                      <div class="session-meta">IP: {{ session.ipAddress }} — {{ session.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+                    </div>
+                    @if (session.current) {
+                      <span class="session-badge current">Actuelle</span>
+                    } @else {
+                      <button class="btn-revoke" (click)="revokeSession(session.id)">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Login History -->
+          <div class="profile-card">
+            <div class="card-title-row">
+              <mat-icon class="card-icon blue">history</mat-icon>
+              <h4>Historique de Connexion</h4>
+            </div>
+            @if (historyLoading) {
+              <div class="loading-inline">
+                <div class="spinner small"></div>
+                <p>Chargement de l'historique...</p>
+              </div>
+            } @else if (loginHistory.length === 0) {
+              <p class="empty-text">Aucun historique de connexion disponible</p>
+            } @else {
+              <div class="history-list">
+                @for (entry of loginHistory; track entry.id) {
+                  <div class="history-item">
+                    <div class="history-dot" [class.success]="entry.status.includes('SUCCESS')" [class.fail]="!entry.status.includes('SUCCESS')"></div>
+                    <div class="history-info">
+                      <span class="history-date">{{ entry.attemptedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                      <span class="history-ip">IP: {{ entry.ipAddress }}</span>
+                    </div>
+                    <span class="history-status" [class.success]="entry.status.includes('SUCCESS')" [class.fail]="!entry.status.includes('SUCCESS')">{{ entry.status.includes('SUCCESS') ? 'Succès' : 'Échec' }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Tab 2: Paramètres -->
+      @if (activeTab === 2) {
+        <div class="content-section">
+          <div class="section-header">
+            <h3>Paramètres</h3>
+            <p>Préférences de notification</p>
+          </div>
+
+          <div class="profile-card">
+            <div class="card-title-row">
+              <mat-icon class="card-icon blue">notifications</mat-icon>
+              <h4>Notifications</h4>
+            </div>
+
+            <div class="pref-row">
+              <div class="pref-left">
+                <mat-icon>email</mat-icon>
+                <div>
+                  <h5>Notifications Email</h5>
+                  <p>Recevez les alertes importantes par email</p>
+                </div>
+              </div>
+              <button class="toggle-btn" [class.on]="notifications.emailNotifications" (click)="notifications.emailNotifications = !notifications.emailNotifications">
+                <span class="toggle-thumb"></span>
+              </button>
+            </div>
+
+            <div class="pref-row">
+              <div class="pref-left">
+                <mat-icon>notifications_active</mat-icon>
+                <div>
+                  <h5>Notifications Navigateur</h5>
+                  <p>Notifications push dans le navigateur</p>
+                </div>
+              </div>
+              <button class="toggle-btn" [class.on]="notifications.browserNotifications" (click)="notifications.browserNotifications = !notifications.browserNotifications">
+                <span class="toggle-thumb"></span>
+              </button>
+            </div>
+
+            <div class="pref-row">
+              <div class="pref-left">
+                <mat-icon>summarize</mat-icon>
+                <div>
+                  <h5>Résumé Quotidien</h5>
+                  <p>Recevez un résumé de fin de journée</p>
+                </div>
+              </div>
+              <button class="toggle-btn" [class.on]="notifications.dailySummary" (click)="notifications.dailySummary = !notifications.dailySummary">
+                <span class="toggle-thumb"></span>
+              </button>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn-primary" (click)="saveNotifications()" [disabled]="prefsLoading">
+                @if (prefsLoading) {
+                  <span class="btn-spinner"></span>
+                } @else {
+                  <mat-icon>save</mat-icon>
+                }
+                {{ prefsLoading ? 'Enregistrement...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Tab 3: Support -->
+      @if (activeTab === 3) {
+        <div class="content-section">
+          <div class="section-header">
+            <h3>Support</h3>
+            <p>Contactez l'assistance</p>
+          </div>
+
+          <!-- Contact Support -->
+          <div class="profile-card">
+            <div class="card-title-row">
+              <mat-icon class="card-icon blue">support_agent</mat-icon>
+              <h4>Contacter le Support</h4>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nom</label>
+              <input class="form-input" type="text" [(ngModel)]="supportForm.name" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-input" type="email" [(ngModel)]="supportForm.email" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sujet</label>
+              <input class="form-input" type="text" [(ngModel)]="supportForm.subject" placeholder="Décrivez brièvement votre problème">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Message</label>
+              <textarea class="form-textarea" rows="5" [(ngModel)]="supportForm.message" placeholder="Décrivez votre problème en détail..."></textarea>
+            </div>
+            <div class="card-actions">
+              <button class="btn-primary" (click)="submitSupport()">
+                <mat-icon>send</mat-icon>
+                Envoyer le Message
+              </button>
+            </div>
+          </div>
+
+          <!-- About -->
+          <div class="profile-card about-card">
+            <div class="about-row">
+              <mat-icon>info</mat-icon>
+              <div>
+                <h4>PointagePro</h4>
+                <p>Version 1.0.0 — Système de Gestion de Pointage</p>
+              </div>
+            </div>
+            <div class="about-row">
+              <mat-icon>copyright</mat-icon>
+              <div>
+                <p>© 2026 PointagePro. Tous droits réservés.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      } @if (!loading) {
+      }
+    </div>
+  </div>
+</div>

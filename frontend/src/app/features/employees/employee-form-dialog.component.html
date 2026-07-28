@@ -1,0 +1,437 @@
+<div class="dialog-header">
+  <div class="header-left">
+    <div class="header-icon">
+      <mat-icon>person_outline</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>{{ isEdit ? 'Modifier l\'Employé' : 'Ajouter un Employé' }}</h2>
+      <p>{{ getStepTitle() }}</p>
+    </div>
+  </div>
+  <button class="close-btn" (click)="onCancel()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<div class="dialog-body">
+  <div class="stepper">
+    @for (s of [1, 2, 3, 4, 5, 6]; track s) {
+      @if (s > 1) {
+        <div class="step-line" [class.completed]="currentStep > s"></div>
+      }
+      <div class="step" [class.active]="currentStep === s" [class.completed]="currentStep > s" (click)="goToStep(s)">
+        <div class="step-circle">
+          @if (currentStep > s) {
+            <mat-icon>check</mat-icon>
+          } @else {
+            <span>{{ s }}</span>
+          }
+        </div>
+        <span class="step-label">{{ stepNames[s - 1] }}</span>
+      </div>
+    }
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-message">
+      <mat-icon>error</mat-icon>
+      {{ errorMessage }}
+    </div>
+  }
+
+  <form [formGroup]="form">
+
+    <!-- Step 1: Informations Personnelles -->
+    @if (currentStep === 1) {
+      <div class="step-content">
+        <div class="upload-section">
+          <div class="upload-box">
+            @if (photoPreview) {
+              <img [src]="photoPreview" alt="Photo">
+            } @else {
+              <mat-icon>cloud_upload</mat-icon>
+              <span>Photo</span>
+            }
+          </div>
+          <div class="upload-text">
+            <div class="upload-title">Photo de profil</div>
+            <div class="upload-subtitle">JPG, PNG — max 2MB</div>
+            <input type="file" #fileInput accept="image/*" (change)="onPhotoSelected($event)" hidden>
+            <button mat-stroked-button type="button" class="choose-file-btn" (click)="fileInput.click()">Choisir un fichier</button>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Prénom <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <input type="text" formControlName="firstName" placeholder="ex: Mohamed">
+            </div>
+            @if (form.get('firstName')?.touched && form.get('firstName')?.hasError('required')) {
+              <span class="field-error">Prénom requis</span>
+            }
+          </div>
+          <div class="form-field">
+            <label class="field-label">Nom <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <input type="text" formControlName="lastName" placeholder="ex: Salah">
+            </div>
+            @if (form.get('lastName')?.touched && form.get('lastName')?.hasError('required')) {
+              <span class="field-error">Nom requis</span>
+            }
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Email</label>
+            <div class="input-wrapper">
+              <input type="email" formControlName="email" placeholder="email@entreprise.tn">
+            </div>
+            @if (form.get('email')?.touched && form.get('email')?.hasError('email')) {
+              <span class="field-error">Email invalide</span>
+            }
+          </div>
+          <div class="form-field">
+            <label class="field-label">Téléphone</label>
+            <div class="input-wrapper">
+              <input type="tel" formControlName="phone" placeholder="+216 XX XXX XXX">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Date de naissance</label>
+            <div class="input-wrapper">
+              <input type="date" formControlName="birthDate">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Numéro CIN</label>
+            <div class="input-wrapper">
+              <input type="text" formControlName="cin" placeholder="XXXXXXXX">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid single">
+          <div class="form-field">
+            <label class="field-label">Adresse</label>
+            <div class="input-wrapper">
+              <input type="text" formControlName="address" placeholder="Rue, Ville, Code postal">
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 2: Informations Professionnelles -->
+    @if (currentStep === 2) {
+      <div class="step-content">
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Matricule</label>
+            <div class="input-wrapper">
+              <input type="text" formControlName="matricule" placeholder="Auto-généré si vide">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">UID Badge RFID</label>
+            <div class="input-wrapper">
+              <input type="text" formControlName="rfidUid" placeholder="Scanner ou saisir">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Poste / Titre</label>
+            <div class="input-wrapper">
+              <input type="text" formControlName="position" placeholder="ex: Développeur Senior">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Département</label>
+            <mat-form-field appearance="outline" class="material-field">
+              <mat-select formControlName="department" placeholder="Sélectionner...">
+                @for (dept of departments; track dept) {
+                  <mat-option [value]="dept">{{ dept }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Date d'embauche</label>
+            <div class="input-wrapper">
+              <input type="date" formControlName="hiringDate">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Type de contrat</label>
+            <mat-form-field appearance="outline" class="material-field">
+              <mat-select formControlName="contractType" placeholder="Sélectionner...">
+                @for (type of contractTypes; track type) {
+                  <mat-option [value]="type">{{ type }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="form-grid single">
+          <div class="form-field">
+            <label class="field-label">Statut</label>
+            <div class="status-toggle">
+              <button type="button" class="status-btn active-btn" [class.active]="form.get('status')?.value === 'ACTIF'" (click)="form.patchValue({status: 'ACTIF'})">
+                Actif
+              </button>
+              <button type="button" class="status-btn inactive-btn" [class.active]="form.get('status')?.value === 'INACTIF'" (click)="form.patchValue({status: 'INACTIF'})">
+                Inactif
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 3: Horaires de Travail -->
+    @if (currentStep === 3) {
+      <div class="step-content">
+        <p class="step-hint">Configurez l'horaire de travail pour chaque jour. Les jours non cochés utilisent l'horaire global des paramètres.</p>
+        <div class="schedule-table">
+          @for (day of weekDays; track day.key) {
+            <div class="schedule-row" [class.disabled]="!scheduleEnabled[day.key]">
+              <label class="schedule-check">
+                <input type="checkbox" [checked]="scheduleEnabled[day.key]" (change)="scheduleEnabled[day.key] = !scheduleEnabled[day.key]">
+                <span class="checkmark"></span>
+                <span class="day-label">{{ day.label }}</span>
+              </label>
+              <div class="schedule-times">
+                <input type="time" class="time-input" [value]="scheduleStart[day.key]" (change)="scheduleStart[day.key] = $any($event.target).value" [disabled]="!scheduleEnabled[day.key]">
+                <span class="time-sep">→</span>
+                <input type="time" class="time-input" [value]="scheduleEnd[day.key]" (change)="scheduleEnd[day.key] = $any($event.target).value" [disabled]="!scheduleEnabled[day.key]">
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Step 4: Salaire & Primes -->
+    @if (currentStep === 4) {
+      <div class="step-content">
+        <div class="form-grid single">
+          <div class="form-field">
+            <label class="field-label">Salaire de base (DT) <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <input type="number" formControlName="baseSalary" placeholder="0.000">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Prime Transport (DT)</label>
+            <div class="input-wrapper">
+              <input type="number" formControlName="primeTransport" placeholder="0.000">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Prime de Rendement (DT)</label>
+            <div class="input-wrapper">
+              <input type="number" formControlName="primePerformance" placeholder="0.000">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid single">
+          <div class="form-field">
+            <label class="field-label">Autres Primes (DT)</label>
+            <div class="input-wrapper">
+              <input type="number" formControlName="primeOther" placeholder="0.000">
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 5: Droits de Congés -->
+    @if (currentStep === 5) {
+      <div class="step-content">
+        <p class="step-hint">Définissez les droits de congé pour cet employé. Mettre 0 pour désactiver un type de congé.</p>
+
+        <div class="form-grid single">
+          <div class="form-field">
+            <label class="field-label">Congé Annuel (jours/an)</label>
+            <div class="input-wrapper">
+              <input type="number" formControlName="annualLeaveDays" placeholder="Ex: 22">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label">Congé Maternité (jours)</label>
+            <div class="input-wrapper">
+              <input type="number" formControlName="maternityLeaveDays" placeholder="Ex: 90">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Congé Paternité (jours)</label>
+            <div class="input-wrapper">
+              <input type="number" formControlName="paternityLeaveDays" placeholder="Ex: 5">
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 6: Récapitulatif -->
+    @if (currentStep === 6) {
+      <div class="step-content">
+        <div class="recap-section">
+          <div class="recap-grid">
+            <div class="recap-card">
+              <div class="recap-card-header">
+                <mat-icon>person</mat-icon>
+                <span>Identité</span>
+              </div>
+              <div class="recap-card-body">
+                <div class="recap-item">
+                  <span class="recap-label">Nom complet</span>
+                  <span class="recap-value">{{ getFullName() }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Email</span>
+                  <span class="recap-value">{{ form.get('email')?.value || '—' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Téléphone</span>
+                  <span class="recap-value">{{ form.get('phone')?.value || '—' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">CIN</span>
+                  <span class="recap-value">{{ form.get('cin')?.value || '—' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="recap-card">
+              <div class="recap-card-header">
+                <mat-icon>work</mat-icon>
+                <span>Emploi</span>
+              </div>
+              <div class="recap-card-body">
+                <div class="recap-item">
+                  <span class="recap-label">Poste</span>
+                  <span class="recap-value">{{ form.get('position')?.value || '—' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Département</span>
+                  <span class="recap-value">{{ form.get('department')?.value || '—' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Contrat</span>
+                  <span class="recap-value">{{ form.get('contractType')?.value || '—' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Statut</span>
+                  <span class="recap-value">{{ form.get('status')?.value === 'ACTIF' ? 'Actif' : 'Inactif' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="recap-card">
+              <div class="recap-card-header">
+                <mat-icon>schedule</mat-icon>
+                <span>Horaires</span>
+              </div>
+              <div class="recap-card-body">
+                <div class="recap-item">
+                  <span class="recap-label">Planning</span>
+                  <span class="recap-value">{{ getScheduleSummary() }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="recap-card">
+              <div class="recap-card-header">
+                <mat-icon>payments</mat-icon>
+                <span>Salaire</span>
+              </div>
+              <div class="recap-card-body">
+                <div class="recap-item">
+                  <span class="recap-label">Base</span>
+                  <span class="recap-value">{{ form.get('baseSalary')?.value ? (form.get('baseSalary')?.value + ' DT') : '—' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Primes totales</span>
+                  <span class="recap-value">{{ ((form.get('primeTransport')?.value || 0) + (form.get('primePerformance')?.value || 0) + (form.get('primeOther')?.value || 0)) + ' DT' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="recap-card">
+              <div class="recap-card-header">
+                <mat-icon>beach_access</mat-icon>
+                <span>Congés</span>
+              </div>
+              <div class="recap-card-body">
+                <div class="recap-item">
+                  <span class="recap-label">Annuel</span>
+                  <span class="recap-value">{{ form.get('annualLeaveDays')?.value ? (form.get('annualLeaveDays')?.value + ' j') : 'Global (22 j)' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Maternité</span>
+                  <span class="recap-value">{{ form.get('maternityLeaveDays')?.value ? (form.get('maternityLeaveDays')?.value + ' j') : 'Global (90 j)' }}</span>
+                </div>
+                <div class="recap-item">
+                  <span class="recap-label">Paternité</span>
+                  <span class="recap-value">{{ form.get('paternityLeaveDays')?.value ? (form.get('paternityLeaveDays')?.value + ' j') : 'Global (5 j)' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </form>
+</div>
+
+<div class="dialog-footer">
+  <div class="footer-left">
+    @if (currentStep > 1) {
+      <button mat-stroked-button class="footer-btn" (click)="prevStep()" [disabled]="loading">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+    } @else {
+      <button mat-stroked-button class="footer-btn" (click)="onCancel()" [disabled]="loading">Annuler</button>
+    }
+  </div>
+
+  <div class="progress-dots">
+    @for (s of [1, 2, 3, 4, 5, 6]; track s) {
+      <span class="dot" [class.active]="currentStep === s" [class.completed]="currentStep > s"></span>
+    }
+  </div>
+
+  <div class="footer-right">
+    @if (currentStep < totalSteps) {
+      <button mat-raised-button class="primary-btn" (click)="nextStep()">
+        Suivant
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    } @else {
+      <button mat-raised-button class="primary-btn" (click)="onSubmit()" [disabled]="form.invalid || loading">
+        @if (loading) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          Enregistrer l'Employé
+        }
+      </button>
+    }
+  </div>
+</div>

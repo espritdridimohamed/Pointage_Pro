@@ -1,0 +1,156 @@
+<div class="leave-dialog">
+  <div class="dialog-header">
+    <div class="header-left">
+      <div class="header-icon">
+        <mat-icon>calendar_today</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2>{{ editMode ? 'Modifier la Demande' : 'Nouvelle Demande de Congé' }}</h2>
+        <p>{{ editMode ? 'Modifiez les détails de la demande' : 'Remplissez les détails de la demande' }}</p>
+      </div>
+    </div>
+    <button class="close-btn" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="dialog-body">
+    @if (submitted) {
+      <div class="success-state">
+        <div class="success-icon">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <h3>{{ editMode ? 'Demande modifiée !' : 'Demande envoyée !' }}</h3>
+        <p>{{ editMode ? 'Les modifications ont été enregistrées.' : 'La demande de congé a été soumise pour validation.' }}</p>
+        <div class="summary-card">
+          <div class="summary-rows">
+            <div class="summary-row">
+              <span class="summary-key">Employé</span>
+              <span class="summary-val">{{ getSelectedEmployeeName() }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">Type</span>
+              <span class="summary-val">{{ getSelectedTypeName() }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">Du</span>
+              <span class="summary-val">{{ formatDate(form.from) }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">Au</span>
+              <span class="summary-val">{{ formatDate(form.to) }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">Durée</span>
+              <span class="summary-val">{{ duration }} jour(s)</span>
+            </div>
+            @if (attachmentName) {
+              <div class="summary-row">
+                <span class="summary-key">Pièce jointe</span>
+                <span class="summary-val">{{ attachmentName }}</span>
+              </div>
+            }
+          </div>
+        </div>
+        <button class="btn-close-success" (click)="closeAfterSubmit()">Fermer</button>
+      </div>
+    } @else {
+      <div class="form-content">
+        <div class="form-group">
+          <label class="form-label">Employé <span class="required">*</span></label>
+          <select class="form-select" [(ngModel)]="form.employeeId" [disabled]="editMode" (ngModelChange)="onEmployeeChange()">
+            <option [ngValue]="null">Sélectionner un employé...</option>
+            @for (emp of employees; track emp.id) {
+              <option [ngValue]="emp.id">{{ emp.firstName }} {{ emp.lastName }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Type de congé <span class="required">*</span></label>
+          <div class="type-grid">
+            @for (lt of leaveTypes; track lt.value) {
+              <button
+                class="type-btn"
+                [class.selected]="form.type === lt.value"
+                [class.disabled]="form.employeeId && getRemaining(lt.value) !== null && getRemaining(lt.value)! <= 0"
+                [style.--type-color]="lt.color"
+                (click)="selectType(lt)">
+                <div class="type-btn-header">
+                  <div class="type-dot" [style.background]="lt.color"></div>
+                  <span>{{ lt.label }}</span>
+                </div>
+                @if (form.employeeId && getRemaining(lt.value) !== null) {
+                  <span class="type-max" [class.empty]="getRemaining(lt.value)! <= 0">{{ getRemaining(lt.value) }} j restants</span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date de début <span class="required">*</span></label>
+            <input type="date" class="form-input" [(ngModel)]="form.from" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date de fin <span class="required">*</span></label>
+            <input type="date" class="form-input" [(ngModel)]="form.to" [min]="form.from" />
+          </div>
+        </div>
+
+        @if (duration > 0) {
+          <div class="duration-badge">
+            <mat-icon>calendar_today</mat-icon>
+            <span>Durée calculée : <strong>{{ duration }} jour(s)</strong></span>
+          </div>
+        }
+
+        <div class="form-group">
+          <label class="form-label">Motif / Justification</label>
+          <textarea class="form-textarea" [(ngModel)]="form.reason" placeholder="Décrivez brièvement le motif de votre demande..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Document justificatif (optionnel)</label>
+          <input type="file" id="attachmentFile" class="file-input-hidden" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" />
+          @if (attachmentBase64) {
+            <div class="upload-preview">
+              <mat-icon class="upload-preview-icon">description</mat-icon>
+              <span class="upload-preview-name">{{ attachmentName }}</span>
+              <button class="upload-remove-btn" (click)="removeAttachment()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          } @else {
+            <div class="upload-zone" (click)="triggerFileInput()">
+              <mat-icon class="upload-icon">cloud_upload</mat-icon>
+              <p class="upload-text">Cliquez pour sélectionner un fichier</p>
+              <p class="upload-hint">PDF, JPG, PNG — max 5MB</p>
+            </div>
+          }
+          @if (attachmentTooLarge) {
+            <p class="upload-error">Le fichier dépasse la taille maximale de 5MB</p>
+          }
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <p class="toggle-label">Demande urgente</p>
+            <p class="toggle-sub">Notifie le responsable immédiatement</p>
+          </div>
+          <button class="toggle-switch" [class.active]="form.urgent" (click)="toggleUrgent()">
+            <div class="toggle-thumb"></div>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (!submitted) {
+    <div class="dialog-footer">
+      <button class="btn-cancel" (click)="close()">Annuler</button>
+      <button class="btn-submit" [disabled]="!isValid" (click)="submit()">{{ editMode ? 'Enregistrer les Modifications' : 'Soumettre la Demande' }}</button>
+    </div>
+  }
+</div>

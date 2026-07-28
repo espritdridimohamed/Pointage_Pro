@@ -1,0 +1,193 @@
+<div class="settings-page page-animate">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Paramètres</h1>
+      <p class="page-subtitle">Configurez votre espace de travail</p>
+    </div>
+  </div>
+
+  <!-- Company Info -->
+  <div class="settings-card">
+    <div class="card-title-row">
+      <mat-icon class="card-icon blue">business</mat-icon>
+      <h3 class="card-title">Informations de l'Entreprise</h3>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Nom de l'Entreprise</label>
+        <input type="text" class="form-input" [(ngModel)]="settings.companyName">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Secteur d'Activité</label>
+        <input type="text" class="form-input" [(ngModel)]="settings.companySector">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adresse</label>
+        <input type="text" class="form-input" [(ngModel)]="settings.companyAddress">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email de Contact</label>
+        <input type="email" class="form-input" [(ngModel)]="settings.companyEmail">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone</label>
+        <input type="tel" class="form-input" [(ngModel)]="settings.companyPhone">
+      </div>
+    </div>
+
+    <div class="logo-section">
+      <label class="form-label">Logo de l'Entreprise</label>
+      <div class="logo-upload">
+        @if (settings.companyLogo) {
+          <img [src]="settings.companyLogo" class="logo-preview" alt="Logo">
+        } @else {
+          <div class="logo-placeholder">
+            <mat-icon>cloud_upload</mat-icon>
+          </div>
+        }
+        <div class="logo-upload-info">
+          <label class="btn-outline-sm">
+            <mat-icon>upload</mat-icon>
+            Télécharger un logo
+            <input type="file" accept="image/png,image/jpeg" hidden (change)="onLogoUpload($event)">
+          </label>
+          <p class="upload-hint">PNG, JPG jusqu'à 2MB</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuration Paie -->
+  <div class="settings-card">
+    <div class="card-title-row">
+      <mat-icon class="card-icon blue">schedule</mat-icon>
+      <h3 class="card-title">Configuration</h3>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Tolérance Retard (min)</label>
+        <input type="number" class="form-input" [(ngModel)]="settings.lateGraceMinutes">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Taux Heure Supplémentaire</label>
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.overtimeRate">
+      </div>
+    </div>
+  </div>
+
+  <!-- CNSS & Assurance -->
+  <div class="settings-card">
+    <div class="card-title-row">
+      <mat-icon class="card-icon orange">account_balance</mat-icon>
+      <h3 class="card-title">CNSS & Assurance</h3>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label class="form-label">CNSS Employé (%)</label>
+        <input type="number" step="0.01" class="form-input" [(ngModel)]="settings.cnssRate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CNSS Employeur (%)</label>
+        <input type="number" step="0.01" class="form-input" [(ngModel)]="settings.cnssEmployerRate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Plafond CNSS (DT)</label>
+        <input type="number" step="0.001" class="form-input" [(ngModel)]="settings.cnssCeiling">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assurance Maladie (%)</label>
+        <input type="number" step="0.001" class="form-input" [(ngModel)]="settings.assuranceRate">
+      </div>
+    </div>
+  </div>
+
+  <!-- IR (Income Tax) -->
+  <div class="settings-card">
+    <div class="card-title-row">
+      <mat-icon class="card-icon orange">receipt_long</mat-icon>
+      <h3 class="card-title">Impôt sur le Revenu (IR)</h3>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">Abattement Annuel (DT)</label>
+        <input type="number" class="form-input" [(ngModel)]="settings.irAbatement">
+      </div>
+    </div>
+    <div class="ir-grid">
+      <div class="ir-header">
+        <span>Tranche</span>
+        <span>Seuil (DT)</span>
+        <span>Taux (%)</span>
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 1</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche1">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate1">
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 2</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche2">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate2">
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 3</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche3">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate3">
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 4</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche4">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate4">
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 5</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche5">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate5">
+      </div>
+    </div>
+  </div>
+
+  <!-- Preferences -->
+  <div class="settings-card">
+    <h3 class="card-title">Préférences</h3>
+
+    <div class="pref-row">
+      <div class="pref-left">
+        <mat-icon class="pref-icon">language</mat-icon>
+        <div>
+          <p class="pref-label">Langue</p>
+          <p class="pref-desc">Interface utilisateur</p>
+        </div>
+      </div>
+      <select class="form-select" [(ngModel)]="settings.language">
+        <option value="fr">Français</option>
+        <option value="ar">العربية</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+
+    <div class="pref-row">
+      <div class="pref-left">
+        <mat-icon class="pref-icon">{{ settings.theme === 'dark' ? 'dark_mode' : 'light_mode' }}</mat-icon>
+        <div>
+          <p class="pref-label">Thème</p>
+          <p class="pref-desc">{{ settings.theme === 'dark' ? 'Mode sombre activé' : 'Mode clair activé' }}</p>
+        </div>
+      </div>
+      <button class="toggle-btn" [class.on]="settings.theme === 'dark'" (click)="toggleDarkMode()">
+        <span class="toggle-thumb"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div class="save-row">
+    @if (saveMessage) {
+      <span class="save-message" [class.error]="saveMessage.includes('Erreur')">{{ saveMessage }}</span>
+    }
+    <button class="save-btn" (click)="save()" [disabled]="saving">
+      <mat-icon>save</mat-icon>
+      {{ saving ? 'Enregistrement...' : 'Enregistrer les Modifications' }}
+    </button>
+  </div>
+</div>

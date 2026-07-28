@@ -1,0 +1,168 @@
+<div class="payroll-page page-animate">
+  <div class="page-header">
+    <div>
+      <h1>Salaires</h1>
+      <p class="subtitle">Gestion de la paie — {{ selectedMonthLabel }}</p>
+    </div>
+    <div class="header-actions">
+      <select class="month-select" [(ngModel)]="selectedMonth" (change)="onMonthChange()">
+        @for (m of monthLabels; track m; let i = $index) {
+          <option [value]="i + 1">{{ m }}</option>
+        }
+      </select>
+      <select class="month-select" [(ngModel)]="selectedYear" (change)="onMonthChange()">
+        <option [value]="2025">2025</option>
+        <option [value]="2026">2026</option>
+        <option [value]="2027">2027</option>
+      </select>
+      <button class="btn-outline" (click)="onExportPdf()">
+        <mat-icon>picture_as_pdf</mat-icon>
+        Exporter PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <mat-icon>trending_up</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ fmt(viewMode === 'annual' ? annualMasseSalariale : masseSalariale) }} DT</span>
+        <span class="stat-label">Masse Salariale {{ viewMode === 'annual' ? '(Annuelle)' : '(Mensuelle)' }}</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">
+        <mat-icon>trending_up</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ fmt(viewMode === 'annual' ? annualPrimes : totalPrimes) }} DT</span>
+        <span class="stat-label">Total Primes {{ viewMode === 'annual' ? '(Annuelles)' : '(Mensuelles)' }}</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">
+        <mat-icon>trending_down</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ fmt(viewMode === 'annual' ? annualRetenues : totalDeductions) }} DT</span>
+        <span class="stat-label">Total Retenues {{ viewMode === 'annual' ? '(Annuelles)' : '(Mensuelles)' }}</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">
+        <mat-icon>account_balance_wallet</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number">{{ fmt(viewMode === 'annual' ? totalNet * 12 : totalNet) }} DT</span>
+        <span class="stat-label">Net à Payer {{ viewMode === 'annual' ? '(Annuel)' : '(Mensuel)' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <h3>Tableau de Paie — {{ selectedMonthLabel }}</h3>
+      <div class="table-header-actions">
+        @if (payroll && payroll.status !== 'PAID') {
+          <button class="btn-pay-all" (click)="payAll()">
+            <mat-icon>payments</mat-icon>
+            Marquer tout comme payé
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <div class="filter-tabs">
+        <button class="filter-tab" [class.active]="statusFilter === 'TOUT'" (click)="onStatusFilter('TOUT')">Tout</button>
+        <button class="filter-tab pending" [class.active]="statusFilter === 'PENDING'" (click)="onStatusFilter('PENDING')">
+          <span class="tab-dot pending"></span> En attente
+        </button>
+        <button class="filter-tab paid" [class.active]="statusFilter === 'PAYED'" (click)="onStatusFilter('PAYED')">
+          <span class="tab-dot paid"></span> Payé
+        </button>
+      </div>
+      <div class="search-wrapper">
+        <mat-icon>search</mat-icon>
+        <input type="text" placeholder="Rechercher un employé..." (input)="onSearch($event)">
+      </div>
+    </div>
+
+    @if (loading) {
+      <div class="loading-state">
+        <p>Chargement...</p>
+      </div>
+    } @else {
+      <table class="payroll-table">
+        <thead>
+          <tr>
+            <th>EMPLOYÉ</th>
+            <th>SALAIRE BASE</th>
+            <th>PRIMES</th>
+            <th>RETENUES</th>
+            <th>SALAIRE NET</th>
+            <th>STATUT</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (filteredRecords.length === 0) {
+            <tr>
+              <td colspan="7" class="empty-cell">
+                <div class="empty-inline">
+                  <mat-icon>info</mat-icon>
+                  <span>Aucune donnée de paie pour {{ selectedMonthLabel }}</span>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (record of filteredRecords; track record.id) {
+              <tr>
+                <td>
+                  <div class="emp-cell">
+                    @if (record.photo) {
+                      <img [src]="record.photo" [alt]="record.firstName" class="avatar-img">
+                    } @else {
+                      <div class="avatar" [style.background]="record.avatarColor">{{ record.initials }}</div>
+                    }
+                    <div class="emp-info">
+                      <span class="emp-name">{{ record.firstName }} {{ record.lastName }}</span>
+                      <span class="emp-position">{{ record.position }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="amount">{{ fmt(record.baseSalary) }} DT</span></td>
+                <td><span class="amount primes">+{{ fmt((record.totalGross || 0) - (record.baseSalary || 0)) }} DT</span></td>
+                <td><span class="amount retenues">-{{ fmt(record.totalDeductions || 0) }} DT</span></td>
+                <td><span class="amount net">{{ fmt(record.netSalary || 0) }} DT</span></td>
+                <td>
+                  <span class="status-badge" [ngClass]="'status-' + record.status.toLowerCase()">
+                    <span class="status-dot"></span>
+                    {{ getStatusLabel(record.status) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="btn-payslip" (click)="openPaySlip(record)">
+                      <mat-icon>visibility</mat-icon>
+                      Fiche de Paie
+                    </button>
+                    @if (record.status !== 'PAYED') {
+                      <button class="btn-mark-paid" (click)="payItem(record)">
+                        <mat-icon>check_circle</mat-icon>
+                        Marquer payé
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

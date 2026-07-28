@@ -1,0 +1,190 @@
+<div class="leaves-page page-animate">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Congés</h1>
+      <p class="page-subtitle">Gestion des demandes de congé</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-outline" (click)="exportPdf()">
+        <mat-icon>picture_as_pdf</mat-icon>
+        Exporter PDF
+      </button>
+      <button class="btn-primary" (click)="openNewDemande()">
+        <mat-icon>add</mat-icon>
+        Nouvelle Demande
+      </button>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    @for (card of summaryCards; track card.label) {
+      <div class="summary-card">
+        <div class="card-icon" [style.background]="card.bg">
+          <div class="card-dot" [style.background]="card.color"></div>
+        </div>
+        <p class="card-value" [style.color]="card.color">{{ card.value }}</p>
+        <p class="card-label">{{ card.label }}</p>
+      </div>
+    }
+  </div>
+
+  @if (selectedEmployeeId && leaveBalance.length > 0) {
+    <div class="balance-card">
+      <h3 class="balance-title">Solde par Type de Congé</h3>
+      <div class="balance-grid">
+        @for (b of leaveBalance; track b.type) {
+          <div class="balance-item">
+            <div class="balance-header">
+              <span class="balance-type" [style.color]="b.color">{{ b.type }}</span>
+              <span class="balance-remaining" [style.color]="b.color">
+                {{ b.remaining !== null ? b.remaining + ' j restants' : 'Illimité' }}
+              </span>
+            </div>
+            @if (b.total !== null) {
+              <div class="balance-bar-track">
+                <div class="balance-bar-fill" [style.width]="barWidth(b.used, b.total) + '%'" [style.background]="b.color"></div>
+              </div>
+              <div class="balance-detail">
+                <span>{{ b.used }} j utilisés</span>
+                <span>{{ b.total }} j total</span>
+              </div>
+            } @else {
+              <div class="balance-detail">
+                <span>{{ b.used }} j utilisés</span>
+                <span>Illimité</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="table-card">
+    <div class="table-header">
+      <h3 class="table-title">Demandes de Congé</h3>
+    </div>
+
+    <div class="filter-bar">
+      <div class="employee-filter">
+        <select class="filter-select" [(ngModel)]="selectedEmployeeId" (change)="onEmployeeFilterChange()">
+          <option [ngValue]="null">Tous les employés</option>
+          @for (emp of employees; track emp.id) {
+            <option [ngValue]="emp.id">{{ emp.firstName }} {{ emp.lastName }}</option>
+          }
+        </select>
+      </div>
+      <div class="search-box">
+        <mat-icon>search</mat-icon>
+        <input type="text" placeholder="Rechercher un employé..." [(ngModel)]="search" (input)="onFilterChange()" />
+      </div>
+      <select class="filter-select" [(ngModel)]="filterStatus" (change)="onFilterChange()">
+        @for (opt of statusOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+      <select class="filter-select" [(ngModel)]="filterType" (change)="onFilterChange()">
+        @for (opt of typeOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+      <select class="filter-select sort-select" [(ngModel)]="sortBy" (change)="onFilterChange()">
+        @for (opt of sortOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+      @if (selectedEmployeeId || search || filterStatus || filterType) {
+        <button class="btn-clear" (click)="clearFilters()">
+          <mat-icon>close</mat-icon>
+          Effacer
+        </button>
+      }
+    </div>
+
+    <div class="table-body">
+      @if (loading) {
+        <div class="loading-state">
+          <p>Chargement...</p>
+        </div>
+      } @else if (requests.length === 0) {
+        <div class="empty-state">
+          <mat-icon>event_busy</mat-icon>
+          <p>Aucune demande de congé</p>
+        </div>
+      } @else {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>EMPLOYÉ</th>
+              <th>TYPE</th>
+              <th>DÉBUT</th>
+              <th>FIN</th>
+              <th>DURÉE</th>
+              <th>STATUT</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (req of requests; track req.id) {
+              <tr>
+                <td>
+                  <div class="employee-cell">
+                    @if (req.photo) {
+                      <img [src]="req.photo" [alt]="req.firstName" class="avatar-img">
+                    } @else {
+                      <div class="avatar" [style.background]="req.avatarColor">{{ req.initials }}</div>
+                    }
+                    <span class="employee-name">{{ req.firstName }} {{ req.lastName }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="cell-with-attachment">
+                    {{ req.leaveType }}
+                    @if (req.hasAttachment) {
+                      <mat-icon class="attachment-icon" title="Pièce jointe">attach_file</mat-icon>
+                    }
+                  </div>
+                </td>
+                <td>{{ formatDate(req.startDate) }}</td>
+                <td>{{ formatDate(req.endDate) }}</td>
+                <td><strong>{{ req.days }} j</strong></td>
+                <td>
+                  <span class="status-badge" [ngClass]="getStatusClass(req.status)">
+                    <mat-icon>{{ getStatusIcon(req.status) }}</mat-icon>
+                    {{ req.status }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="btn-action btn-view" (click)="viewDetails(req)" title="Voir détails">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                    @if (req.status === 'En cours') {
+                      <button class="btn-action btn-edit" (click)="editLeave(req)" title="Modifier">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button class="btn-action btn-approve-sm" (click)="approve(req)" title="Approuver">
+                        <mat-icon>check</mat-icon>
+                      </button>
+                      <button class="btn-action btn-refuse-sm" (click)="refuse(req)" title="Refuser">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                    @if (req.status === 'Approuvé' || req.status === 'Refusé') {
+                      <button class="btn-action btn-reset" (click)="resetToPending(req)" title="Remettre en attente">
+                        <mat-icon>undo</mat-icon>
+                      </button>
+                    }
+                    <button class="btn-action btn-delete" (click)="deleteLeave(req)" title="Supprimer">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  </div>
+</div>
