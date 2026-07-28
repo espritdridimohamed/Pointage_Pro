@@ -1,74 +1,284 @@
-========================================
-  PointagePro - Installation Commands
-  Run in PowerShell as Administrator
-  (Win+X -> Windows Terminal Admin)
-========================================
+============================================
+  POINTAGEPRO - INSTALLATION GUIDE
+  Company PC Setup (Windows)
+============================================
 
-STEP 1: Install Java
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi", "$env:TEMP\jre17.msi")
+Prerequisites:
+  - Windows 10 or 11
+  - Internet connection
+  - Administrator access (right-click -> Run as admin)
+
+Files needed (from deploy folder):
+  - deploy\backend\pointagepro.jar
+  - deploy\frontend\* (all files inside)
+  - deploy\INSTALL.txt (this file)
+
+============================================
+  STEP 1: INSTALL JAVA 17
+============================================
+
+Open PowerShell as Administrator:
+  1. Press Windows key
+  2. Type: PowerShell
+  3. Right-click "Windows PowerShell"
+  4. Click "Run as administrator"
+  5. Click "Yes" if asked
+
+Copy and paste this ENTIRE command (select all, copy, right-click in PowerShell to paste):
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+(New-Object System.Net.WebClient).DownloadFile("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi", "$env:TEMP\jre17.msi")
+
+Wait until the download finishes (you see the prompt again). Then install it:
+
 Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\jre17.msi`" ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /quiet /norestart" -Wait
 
+This installs Java silently. Wait ~30 seconds until the prompt returns.
 
-STEP 2: Install XAMPP
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile("https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download", "$env:TEMP\xampp.exe")
+Verify Java installed:
+java -version
 
-Double-click $env:TEMP\xampp.exe to run it normally:
-  Click Next > Next > Next
-  Uncheck "Learn more about XAMPP"
-  Click Next > Finish
+You should see something like "java version 17.0.13". If you see that, Java is OK.
 
-Then start MySQL and Apache:
+
+============================================
+  STEP 2: INSTALL XAMPP (MySQL + Apache)
+============================================
+
+Copy and paste this command to DOWNLOAD XAMPP:
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+(New-Object System.Net.WebClient).DownloadFile("https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download", "$env:TEMP\xampp.exe")
+
+Wait until the download finishes. Then OPEN the download folder:
+
+explorer $env:TEMP
+
+A file explorer window opens. Find "xampp.exe" and DOUBLE-CLICK it.
+
+The XAMPP installer opens. Follow these steps:
+  1. Click "Next" on the welcome screen
+  2. On component selection, make sure these are CHECKED:
+     - MySQL
+     - Apache
+     - PHP
+  3. Click "Next"
+  4. Keep default install location: C:\xampp
+  5. Click "Next"
+  6. Uncheck "Learn more about XAMPP"
+  7. Click "Next"
+  8. Click "Next" to start installing
+  9. Wait 1-2 minutes for installation
+  10. Click "Finish"
+
+Start MySQL and Apache:
 & "C:\xampp\xampp_start.exe"
 
+Verify MySQL works:
+& "C:\xampp\mysql\bin\mysql.exe" -u root --version
 
-STEP 3: Create Database (wait for XAMPP to finish first)
+You should see "mysql  Ver 8.x.x". If yes, MySQL is OK.
+
+
+============================================
+  STEP 3: CREATE DATABASE
+============================================
+
+Copy and paste this command:
+
 & "C:\xampp\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS pointagepro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
+You should see no errors. If you see the prompt again, the database is created.
 
-STEP 4: Create folders + Copy files manually
+
+============================================
+  STEP 4: CREATE FOLDERS
+============================================
+
+Copy and paste these commands:
+
 New-Item -ItemType Directory -Force -Path "C:\PointagePro\backend"
 New-Item -ItemType Directory -Force -Path "C:\PointagePro\logs"
 
-Then MANUALLY COPY these files:
-  deploy\backend\pointagepro.jar  -->  C:\PointagePro\backend\
-  deploy\frontend\*               -->  C:\xampp\htdocs\pointagepro\
+Two folders are now created:
+  - C:\PointagePro\backend\  (for the JAR file)
+  - C:\PointagePro\logs\     (for log files)
 
 
-STEP 5: Find Java path (copy the output path)
+============================================
+  STEP 5: COPY FILES MANUALLY
+============================================
+
+This step requires manual file copy (no command needed).
+
+A) Copy BACKEND:
+   1. Open the "deploy" folder where you extracted the ZIP
+   2. Open "backend" subfolder
+   3. Copy "pointagepro.jar"
+   4. Paste it into: C:\PointagePro\backend\
+
+B) Copy FRONTEND:
+   1. In the "deploy" folder, open "frontend" subfolder
+   2. Select ALL files (Ctrl+A)
+   3. Copy them (Ctrl+C)
+   4. Paste into: C:\xampp\htdocs\pointagepro\
+      (If "pointagepro" folder doesn't exist, create it first)
+
+Verify files are copied:
+Get-Item C:\PointagePro\backend\pointagepro.jar | Select-Object FullName, Length
+(Get-ChildItem C:\xampp\htdocs\pointagepro\*).Count
+
+First command should show ~62MB file.
+Second command should show around 40 files.
+
+
+============================================
+  STEP 6: FIND JAVA PATH
+============================================
+
+Copy and paste this command:
+
 Get-Command java | Select-Object -ExpandProperty Source
 
+It will output something like:
+  C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\java.exe
 
-STEP 6: Download NSSM + Register Service
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile("https://nssm.cc/release/nssm-2.24.zip", "$env:TEMP\nssm.zip")
+IMPORTANT: Copy this full path. You need it for the next step.
+Keep this PowerShell window open.
+
+
+============================================
+  STEP 7: DOWNLOAD NSSM + REGISTER SERVICE
+============================================
+
+A) Download and install NSSM (runs Windows services):
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+(New-Object System.Net.WebClient).DownloadFile("https://nssm.cc/release/nssm-2.24.zip", "$env:TEMP\nssm.zip")
 Expand-Archive "$env:TEMP\nssm.zip" -DestinationPath "$env:TEMP\nssm" -Force
 Copy-Item "$env:TEMP\nssm\nssm-2.24\win64\nssm.exe" "C:\Windows\nssm.exe" -Force
 
-Replace JAVA_PATH with the path from Step 5:
+B) Register PointagePro as a Windows service.
+
+IMPORTANT: Replace JAVA_PATH_HERE with the path from Step 6.
+For example, if Step 6 gave you "C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\java.exe",
+then replace "PASTE-JAVA-PATH-HERE" with that full path INCLUDING the java.exe part.
+
 & nssm install PointagePro "PASTE-JAVA-PATH-HERE" "-jar" "C:\PointagePro\backend\pointagepro.jar"
 & nssm set PointagePro AppDirectory "C:\PointagePro"
 & nssm set PointagePro AppStdout "C:\PointagePro\logs\stdout.log"
 & nssm set PointagePro AppStderr "C:\PointagePro\logs\stderr.log"
+& nssm set PointagePro AppRotateFiles 1
+& nssm set PointagePro AppRotateBytes 10485760
+& nssm set PointagePro Description "PointagePro Backend API"
 & nssm set PointagePro Start SERVICE_AUTO_START
+
+C) Start the service:
+
 & nssm start PointagePro
 
+Verify it's running:
+& nssm status PointagePro
 
-STEP 7: Start Apache
+Should say "SERVICE_RUNNING".
+
+Check if the API responds:
+Invoke-WebRequest -Uri "http://localhost:8080/api/v1/settings/company" -UseBasicParsing
+
+You should see JSON data returned.
+
+
+============================================
+  STEP 8: START APACHE (if not running)
+============================================
+
 & "C:\xampp\apache_start.bat"
 
+Or open XAMPP Control Panel from:
+  C:\xampp\xampp-control.exe
 
-DONE!
-Open browser: http://localhost/pointagepro/
-Login: admin / admin000
+Click "Start" next to Apache.
 
 
-========================================
+============================================
+  DONE! TEST THE APPLICATION
+============================================
+
+Open your web browser and go to:
+
+  http://localhost/pointagepro/
+
+Login credentials:
+  Username: admin
+  Password: admin000
+
+If the page loads and you can login, everything works!
+
+
+============================================
+  TROUBLESHOOTING
+============================================
+
+Problem: "java is not recognized"
+  -> Restart PowerShell and try again
+  -> Or restart the PC
+
+Problem: Page doesn't load (localhost/pointagepro)
+  -> Check Apache is running:
+     Get-Process httpd -ErrorAction SilentlyContinue
+  -> Start Apache:
+     & "C:\xampp\apache_start.bat"
+
+Problem: Login fails or "cannot connect to database"
+  -> Check MySQL is running:
+     & "C:\xampp\xampp_start.exe" mysql
+  -> Check database exists:
+     & "C:\xampp\mysql\bin\mysql.exe" -u root -e "SHOW DATABASES;"
+
+Problem: Backend not responding (port 8080)
+  -> Check service status:
+     & nssm status PointagePro
+  -> Restart service:
+     & nssm restart PointagePro
+  -> Check logs:
+     notepad C:\PointagePro\logs\stderr.log
+
+Problem: Service error
+  -> View logs:
+     notepad C:\PointagePro\logs\stdout.log
+     notepad C:\PointagePro\logs\stderr.log
+  -> Reinstall service:
+     & nssm stop PointagePro
+     & nssm remove PointagePro confirm
+     (then repeat Step 7B and 7C)
+
+
+============================================
   SERVICE MANAGEMENT
-========================================
+============================================
 
-Check status:   nssm status PointagePro
-Restart:        nssm restart PointagePro
-Stop:           nssm stop PointagePro
-View logs:      notepad C:\PointagePro\logs\stdout.log
+Check status:    & nssm status PointagePro
+Start:           & nssm start PointagePro
+Stop:            & nssm stop PointagePro
+Restart:         & nssm restart PointagePro
+View logs:       notepad C:\PointagePro\logs\stdout.log
+View errors:     notepad C:\PointagePro\logs\stderr.log
+
+The service AUTO-STARTS on every PC boot.
+No need to do anything after the initial setup.
 
 
-The service auto-starts on every PC boot!
+============================================
+  WHAT IS INSTALLED
+============================================
+
+Java 17         -> C:\Program Files\Eclipse Adoptium\
+XAMPP           -> C:\xampp\
+  MySQL         -> Port 3306
+  Apache        -> Port 80
+PointagePro:
+  Frontend      -> C:\xampp\htdocs\pointagepro\
+  Backend       -> C:\PointagePro\backend\pointagepro.jar
+  Logs          -> C:\PointagePro\logs\
+  Database      -> MySQL: pointagepro
+  Service       -> PointagePro (auto-start on boot)
