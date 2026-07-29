@@ -1,20 +1,72 @@
 ================================================================================
   POINTAGEPRO - INSTALLATION GUIDE (COMPANY PC)
-  Complete Step-by-Step with Explanations
+================================================================================
+
+Paste commands in PowerShell Admin (Windows Key → type "PowerShell" → right-click → Run as admin)
+
+================================================================================
+  QUICK UPDATE (if services are already installed - run these after each update)
+================================================================================
+
+Use this section when you just copied new files from USB and need to update.
+
+STEP 1: Stop the backend service
+  & nssm stop PointagePro
+
+  What it does: Stops the current backend so we can replace the JAR.
+
+STEP 2: Copy the new backend JAR from USB to C:\PointagePro\backend\
+  (Overwrite the old pointagepro.jar with the one from USB deploy\backend\)
+
+STEP 3: Copy the new frontend files from USB to C:\xampp\htdocs\pointagepro\
+  (Delete all old files first, then copy the new files from USB deploy\frontend\*)
+
+STEP 4: Start the backend service
+  & nssm start PointagePro
+
+STEP 5: Verify backend is working
+  Invoke-WebRequest -Uri "http://localhost:8080/api/v1/settings/company" -UseBasicParsing | Select-Object StatusCode
+
+  Expected: 403 (this is normal - requires login)
+
+STEP 6: Refresh browser at http://localhost/pointagepro/ and login
+
+  Login: admin / password
+
+DONE! Now test from owner's laptop: http://192.168.x.x/pointagepro/
+
+
+================================================================================
+  FULL INSTALLATION (first time setup - start here if nothing is installed)
 ================================================================================
 
 This document explains EVERY command with what it does.
 Copy-paste each command into PowerShell Admin one at a time.
 
 ================================================================================
-  SECTION 0: OPEN POWERSHELL AS ADMINISTRATOR
+  SECTION 1: INSTALL JAVA 17
 ================================================================================
 
-  Press: Windows Key -> type "PowerShell"
-  Right-click "Windows PowerShell" -> "Run as administrator"
-  Click "Yes"
+  PURPOSE: Java runs the backend (PointagePro JAR).
+  DOWNLOAD: ~170MB from Adoptium (open-source Java).
 
-  A blue window opens. This is where you paste all the commands below.
+  -------- DOWNLOAD JAVA --------
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  (New-Object System.Net.WebClient).DownloadFile("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi", "$env:TEMP\jre17.msi")
+
+  What it does: Downloads the Java installer to the Temp folder.
+  Wait for the prompt to return (download complete).
+
+  -------- INSTALL JAVA SILENTLY --------
+  Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\jre17.msi`" ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /quiet /norestart" -Wait
+
+  What it does: Installs Java without showing any windows.
+  Wait ~30 seconds for the prompt to return.
+
+  -------- VERIFY JAVA --------
+  java -version
+
+  Expected: "openjdk version 17.0.13" (or similar)
 
 ================================================================================
   SECTION 1: INSTALL JAVA 17
