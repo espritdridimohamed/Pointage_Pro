@@ -1,125 +1,412 @@
-============================================
-  POINTAGEPRO - INSTALLATION GUIDE
-  Company PC Setup (Windows)
-============================================
+================================================================================
+  POINTAGEPRO - INSTALLATION GUIDE (COMPANY PC)
+  Complete Step-by-Step with Explanations
+================================================================================
 
-============================================
-  STEP 1: INSTALL JAVA 17                    [DONE]
-============================================
-Java 17.0.13 installed and verified.
+This document explains EVERY command with what it does.
+Copy-paste each command into PowerShell Admin one at a time.
 
+================================================================================
+  SECTION 0: OPEN POWERSHELL AS ADMINISTRATOR
+================================================================================
 
-============================================
-  STEP 2: INSTALL XAMPP (MySQL + Apache)     [DONE]
-============================================
-XAMPP 8.2.12 installed. MySQL and Apache running.
+  Press: Windows Key -> type "PowerShell"
+  Right-click "Windows PowerShell" -> "Run as administrator"
+  Click "Yes"
 
+  A blue window opens. This is where you paste all the commands below.
 
-============================================
-  STEP 3: CREATE DATABASE                    [DONE]
-============================================
-Database 'pointagepro' created successfully.
+================================================================================
+  SECTION 1: INSTALL JAVA 17
+================================================================================
 
+  PURPOSE: Java runs the backend (PointagePro JAR).
+  DOWNLOAD: ~170MB from Adoptium (open-source Java).
 
-============================================
-  STEP 4: CREATE FOLDERS                     [DONE]
-============================================
-C:\PointagePro\backend\ created
-C:\PointagePro\logs\ created
+  -------- DOWNLOAD JAVA --------
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  (New-Object System.Net.WebClient).DownloadFile("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.13%2B11/OpenJDK17U-jre_x64_windows_hotspot_17.0.13_11.msi", "$env:TEMP\jre17.msi")
 
+  What it does: Downloads the Java installer to the Temp folder.
+  Wait for the prompt to return (download complete).
 
-============================================
-  STEP 5: COPY FILES                         [DONE]
-============================================
-pointagepro.jar copied (62MB)
-Frontend files copied (41 files)
+  -------- INSTALL JAVA SILENTLY --------
+  Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\jre17.msi`" ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome /quiet /norestart" -Wait
 
+  What it does: Installs Java without showing any windows.
+  Wait ~30 seconds for the prompt to return.
 
-============================================
-  STEP 6: DOWNLOAD NSSM + REGISTER SERVICE   [DONE]
-============================================
-NSSM 2.24 downloaded and installed.
+  -------- VERIFY JAVA --------
+  java -version
 
-
-============================================
-  STEP 7: RE-REGISTER SERVICE (fix path)     [TODO]
-============================================
-The service was registered with wrong Java path (jdk instead of jre).
-Remove and re-register with correct path.
-
-Copy and paste ALL these commands:
-
-& nssm stop PointagePro
-& nssm remove PointagePro confirm
-& nssm install PointagePro "C:\Program Files\Eclipse Adoptium\jre-17.0.13.11-hotspot\bin\java.exe" "-jar" "C:\PointagePro\backend\pointagepro.jar"
-& nssm set PointagePro AppDirectory "C:\PointagePro"
-& nssm set PointagePro AppStdout "C:\PointagePro\logs\stdout.log"
-& nssm set PointagePro AppStderr "C:\PointagePro\logs\stderr.log"
-& nssm set PointagePro Start SERVICE_AUTO_START
-& nssm start PointagePro
-
-Verify it's running:
-& nssm status PointagePro
-
-Should say: SERVICE_RUNNING
+  Expected: "openjdk version 17.0.13" (or similar)
 
 
-============================================
-  STEP 8: OPEN FIREWALL PORTS                [TODO]
-============================================
-Copy and paste these commands:
+================================================================================
+  SECTION 2: INSTALL XAMPP (MYSQL + APACHE)
+================================================================================
 
-netsh advfirewall firewall add rule name="PointagePro Frontend" dir=in action=allow protocol=TCP localport=80
-netsh advfirewall firewall add rule name="PointagePro Backend" dir=in action=allow protocol=TCP localport=8080
+  PURPOSE: MySQL stores all data. Apache serves the web pages.
+  DOWNLOAD: ~170MB (includes MySQL 10.4, Apache, PHP).
+
+  -------- DOWNLOAD XAMPP --------
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  (New-Object System.Net.WebClient).DownloadFile("https://sourceforge.net/projects/xampp/files/XAMPP%20Windows/8.2.12/xampp-windows-x64-8.2.12-0-VS16-installer.exe/download", "$env:TEMP\xampp.exe")
+
+  Wait for download to complete.
+
+  -------- INSTALL XAMPP (MANUAL) --------
+  The installer file is at: $env:TEMP\xampp.exe
+
+  Open the Temp folder:
+  explorer $env:TEMP
+
+  Double-click "xampp.exe" in the window that opens.
+
+  In the installer wizard:
+    1. Click "Next"
+    2. Make sure MySQL, Apache, and PHP are CHECKED
+    3. Click "Next"
+    4. Keep C:\xampp as the install location
+    5. Click "Next" through the rest
+    6. Click "Finish"
+
+  -------- REGISTER XAMPP SERVICES --------
+  These commands install Apache and MySQL as Windows services.
+  Services AUTO-START when Windows boots and RESTART if they crash.
+
+  "\xampp\apache\apache_installservice.bat"   -- Installs Apache as a service
+  "\xampp\mysql\mysql_installservice.bat"      -- Installs MySQL as a service
+
+  What it does: Instead of running xampp_start.exe (which stops when you close
+  the window), services keep running even when you log off.
+
+  -------- START XAMPP SERVICES --------
+  Start-Service Apache2.4
+  Start-Service mysql
+
+  What it does: Starts both services now.
+
+  -------- VERIFY SERVICES ARE RUNNING --------
+  Get-Service Apache2.4, mysql | Format-Table Name, Status
+
+  Expected: Both show "Running"
+
+  -------- MOVE XAMPP STARTUP STOPPER --------
+  The XAMPP shortcut in the Startup folder auto-launches xampp_start.exe,
+  which conflicts with services. Remove it:
+  Remove-Item "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\xampp-control.lnk" -ErrorAction SilentlyContinue
+  Remove-Item "$env:AppData\Microsoft\Windows\Start Menu\Programs\Startup\xampp-control.lnk" -ErrorAction SilentlyContinue
+
+  (If the file doesn't exist, this is fine.)
 
 
-============================================
-  STEP 9: TEST THE APPLICATION               [TODO]
-============================================
+================================================================================
+  SECTION 3: CREATE THE DATABASE
+================================================================================
 
-ON THE COMPANY PC:
+  PURPOSE: Create the database that PointagePro will use.
+
+  -------- CREATE DATABASE --------
+  & "C:\xampp\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS pointagepro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+  What it does: Creates a database named "pointagepro" with Unicode support.
+
+  -------- VERIFY DATABASE EXISTS --------
+  & "C:\xampp\mysql\bin\mysql.exe" -u root -e "SHOW DATABASES like 'pointagepro';"
+
+  Expected: A row showing "pointagepro" appears.
+
+
+================================================================================
+  SECTION 4: CREATE FOLDERS FOR BACKEND
+================================================================================
+
+  PURPOSE: Create folders to store the backend JAR and log files.
+
+  -------- CREATE FOLDERS --------
+  New-Item -ItemType Directory -Force -Path "C:\PointagePro\backend"
+  New-Item -ItemType Directory -Force -Path "C:\PointagePro\logs"
+
+  What it does: Creates C:\PointagePro\backend\ and C:\PointagePro\logs\
+
+
+================================================================================
+  SECTION 5: COPY FILES (MANUAL - USB DRIVE)
+================================================================================
+
+  PURPOSE: Copy the frontend (web pages) and backend (JAR) to their locations.
+
+  A) COPY BACKEND:
+     From USB: deploy\backend\pointagepro.jar
+     To: C:\PointagePro\backend\pointagepro.jar
+
+  B) COPY FRONTEND:
+     From USB: deploy\frontend\* (all files)
+     To: C:\xampp\htdocs\pointagepro\ (create the folder if it doesn't exist)
+
+  -------- VERIFY FILES --------
+  Get-Item C:\PointagePro\backend\pointagepro.jar | Select-Object FullName, @{Name="SizeMB";Expression={[math]::Round($_.Length/1MB,1)}}
+
+  Expected: ~60MB
+
+  (Get-ChildItem "C:\xampp\htdocs\pointagepro\*").Count
+
+  Expected: ~40+ files (chunk-*.js, index.html, .htaccess, etc.)
+
+
+================================================================================
+  SECTION 6: FIND JAVA PATH
+================================================================================
+
+  PURPOSE: Find the exactly correct Java path for the Windows service.
+
+  Get-Command java | Select-Object -ExpandProperty Source
+
+  Expected: "C:\Program Files\Eclipse Adoptium\jre-17.0.13.11-hotspot\bin\java.exe"
+
+  -------- SAVE JAVA PATH (COPY IT NOW!) --------
+  Copy the full path (including java.exe) to a text file.
+  You will need it in the next step.
+
+
+================================================================================
+  SECTION 7: DOWNLOAD NSSM + REGISTER BACKEND SERVICE
+================================================================================
+
+  PURPOSE: NSSM (Non-Sucking Service Manager) runs the JAR as a Windows service.
+  The service auto-starts on boot and can auto-restart if it crashes.
+
+  -------- DOWNLOAD NSSM --------
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  (New-Object System.Net.WebClient).DownloadFile("https://nssm.cc/release/nssm-2.24.zip", "$env:TEMP\nssm.zip")
+
+  Wait for download to complete.
+
+  -------- EXTRACT AND INSTALL NSSM --------
+  Expand-Archive "$env:TEMP\nssm.zip" -DestinationPath "$env:TEMP\nssm" -Force
+  Copy-Item "$env:TEMP\nssm\nssm-2.24\win64\nssm.exe" "C:\Windows\nssm.exe" -Force
+
+  What it does: Extracts the ZIP, copies nssm.exe to C:\Windows (always in PATH).
+
+  -------- REGISTER THE SERVICE --------
+  PASTE YOUR JAVA PATH from Section 6 below.
+  Replace "PASTE-JAVA-PATH-HERE" with the full path you copied.
+
+  & nssm install PointagePro "PASTE-JAVA-PATH-HERE" "-jar" "C:\PointagePro\backend\pointagepro.jar"
+  & nssm set PointagePro AppDirectory "C:\PointagePro"
+  & nssm set PointagePro AppStdout "C:\PointagePro\logs\stdout.log"
+  & nssm set PointagePro AppStderr "C:\PointagePro\logs\stderr.log"
+  & nssm set PointagePro AppRotateFiles 1
+  & nssm set PointagePro Description "PointagePro Backend API"
+  & nssm set PointagePro Start SERVICE_AUTO_START
+
+  -------- CONFIGURE AUTO-RESTART ON CRASH --------
+  & nssm set PointagePro AppExit Default Restart
+  & nssm set PointagePro AppThrottle 0
+
+  What it does: If the service crashes, Windows restarts it immediately.
+  AppThrottle 0 = no delay before restart.
+
+  -------- START THE SERVICE --------
+  & nssm start PointagePro
+
+  -------- VERIFY SERVICE IS RUNNING --------
+  & nssm status PointagePro
+
+  Expected: "SERVICE_RUNNING"
+
+  If it says "SERVICE_STOPPED":
+    - Check the Java path (Section 6) was pasted correctly
+    - Check logs: notepad C:\PointagePro\logs\stderr.log
+
+
+================================================================================
+  SECTION 8: VERIFY BACKEND IS WORKING
+================================================================================
+
+  -------- CHECK API RESPONSE --------
+  Invoke-WebRequest -Uri "http://localhost:8080/api/v1/settings/company" -UseBasicParsing | Select-Object StatusCode
+
+  Expected: "403" (Forbidden) - This means the backend is running.
+  (403 is normal because this endpoint requires login.)
+
+
+================================================================================
+  SECTION 9: ALLOW .HTACCESS (SPA ROUTING)
+================================================================================
+
+  PURPOSE: Angular needs .htaccess to handle routes (so refreshing the page
+  doesn't show 404).
+
+  -------- ADD ALLOWOVERRIDE TO APACHE CONFIG --------
+  Add-Content "C:\xampp\apache\conf\httpd.conf" "`n<Directory `"C:/xampp/htdocs/pointagepro`">`n    AllowOverride All`n    Options Indexes FollowSymLinks`n</Directory>"
+
+  -------- RESTART APACHE --------
+  Restart-Service Apache2.4
+
+  What it does: Applies the config change by restarting Apache.
+
+  -------- VERIFY FRONTEND LOADS --------
   Open browser: http://localhost/pointagepro/
 
-FROM OWNER'S LAPTOP:
-  1. Find PC's IP on company PC:
-     ipconfig
-     Look for "IPv4 Address" (e.g., 192.168.1.50)
-
-  2. On owner's laptop open browser:
-     http://192.168.1.50/pointagepro/
-
-Login: admin / admin000
+  You should see the login page.
+  Login: admin / password
 
 
-============================================
-  SERVICE MANAGEMENT (reference)
-============================================
+================================================================================
+  SECTION 10: OPEN FIREWALL PORTS (NETWORK ACCESS)
+================================================================================
 
-Check status:    & nssm status PointagePro
-Start:           & nssm start PointagePro
-Stop:            & nssm stop PointagePro
-Restart:         & nssm restart PointagePro
-View logs:       notepad C:\PointagePro\logs\stdout.log
-View errors:     notepad C:\PointagePro\logs\stderr.log
+  PURPOSE: Allow other computers on the network to access PointagePro.
+  Without this, only the company PC can access it.
 
-The service AUTO-STARTS on every PC boot.
+  -------- OPEN PORT 80 (FRONTEND - Apache) --------
+  netsh advfirewall firewall add rule name="PointagePro Frontend (Apache)" dir=in action=allow protocol=TCP localport=80
+
+  -------- OPEN PORT 8080 (BACKEND - Spring Boot) --------
+  netsh advfirewall firewall add rule name="PointagePro Backend (Java)" dir=in action=allow protocol=TCP localport=8080
+
+  -------- OPEN PORT 3306 (MATABASE - MySQL, optional) --------
+  netsh advfirewall firewall add rule name="PointagePro Database (MySQL)" dir=in action=allow protocol=TCP localport=3306
+
+  What it does: Opens these ports in Windows Firewall so other computers
+  can connect to this PC.
 
 
-============================================
+================================================================================
+  SECTION 11: FIND PC'S IP ADDRESS
+================================================================================
+
+  PURPOSE: When accessing from another machine, you need the company PC's IP.
+
+  -------- SHOW IP ADDRESS --------
+  ipconfig | Select-String "IPv4"
+
+  Look for a line like: "IPv4 Address. . . . . . . . . . . : 192.168.x.x"
+  This is the IP address of the company PC on the network.
+
+
+================================================================================
+  SECTION 12: TEST FROM ANOTHER PC
+================================================================================
+
+  On the owner's laptop, open a browser and type:
+
+  http://192.168.x.x/pointagepro/
+
+  Replace 192.168.x.x with the IP from Section 11.
+
+  Login: admin / password
+
+
+================================================================================
+  SECTION 13: VERIFY DATABASE (PHPMyAdmin)
+================================================================================
+
+  PURPOSE: Browse the database visually (tables, data, etc.).
+
+  -------- ON THE COMPANY PC --------
+  http://localhost/phpmyadmin/
+
+  -------- FROM ANOTHER PC --------
+  http://192.168.x.x/phpmyadmin/
+
+  If phpMyAdmin says "Access forbidden" from another PC, run:
+
+  notepad "C:\xampp\apache\conf\extra\httpd-xampp.conf"
+
+  In the file, find this block and add "Require all granted":
+  <Directory "C:/xampp/phpMyAdmin">
+      Require local
+      Require all granted    <-- add this line
+  </Directory>
+
+  Save the file, then restart Apache:
+  Restart-Service Apache2.4
+
+
+================================================================================
+  SERVICE MANAGEMENT REFERENCE
+================================================================================
+
+  POINTAGEPRO SERVICE:
+    Check status:   & nssm status PointagePro
+    Start:          & nssm start PointagePro
+    Stop:           & nssm stop PointagePro
+    Restart:        & nssm restart PointagePro
+    View logs:      notepad C:\PointagePro\logs\stdout.log
+    View errors:    notepad C:\PointagePro\logs\stderr.log
+
+  APACHE (httpd):
+    Check status:   Get-Service Apache2.4
+    Start:          Start-Service Apache2.4
+    Stop:           Stop-Service Apache2.4
+
+  MYSQL:
+    Check status:   Get-Service mysql
+    Start:          Start-Service mysql
+    Stop:           Stop-Service mysql
+
+
+================================================================================
+  WHAT IS INSTALLED AND WHERE
+================================================================================
+
+  Java 17          -> C:\Program Files\Eclipse Adoptium\
+  XAMPP            -> C:\xampp\
+    Apache         -> C:\xampp\apache\  (Port 80, service: Apache2.4)
+    MySQL          -> C:\xampp\mysql\    (Port 3306, service: mysql)
+  NSSM             -> C:\Windows\nssm.exe
+  PointagePro:
+    Frontend       -> C:\xampp\htdocs\pointagepro\
+    Backend JAR    -> C:\PointagePro\backend\pointagepro.jar
+    Logs           -> C:\PointagePro\logs\
+    Service        -> PointagePro (auto-start + auto-restart)
+
+
+================================================================================
   TROUBLESHOOTING
-============================================
+================================================================================
 
-Service won't start:
-  Check Java path:
-  Get-Command java | Select-Object -ExpandProperty Source
-  Then re-register service with correct path (see Step 7).
+  PROBLEM: PointagePro service won't start.
+  CAUSE: Wrong Java path.
+  FIX: Re-run Section 7 with the correct path from Section 6.
 
-Apache port 80 in use:
-  Already running from xampp_start.exe - no action needed.
+  PROBLEM: Installation commands don't work.
+  CAUSE: You ran them in the wrong terminal.
+  FIX: Make sure you're in PowerShell Admin (blue window).
 
-MySQL not working:
-  & "C:\xampp\xampp_start.exe"
+  PROBLEM: It says "access denied" or "not admin".
+  CAUSE: PowerShell is not running as Administrator.
+  FIX: Right-click PowerShell -> "Run as administrator"
 
-Can't access from other PC:
-  Check firewall rules (Step 8).
-  Check company PC's IP with: ipconfig
+  PROBLEM: XAMPP didn't install.
+  CAUSE: You might have missed the manual installer steps.
+  FIX: Re-download or run: C:\xampp\xampp-control.exe -> Start Apache + MySQL
+
+  PROBLEM: Blank page at localhost/pointagepro/
+  CAUSE: The base href might be wrong. Check that index.html has:
+         <base href="/pointagepro/">
+
+  PROBLEM: Can't access from another PC.
+  CAUSE 1: Firewall is blocking ports. Run Section 10.
+  CAUSE 2: Wrong IP address. Run Section 11 to find the correct IP.
+
+  PROBLEM: XAMPP service stopped after reboot.
+  CAUSE: The XAMPP startup shortcut wasn't removed.
+  FIX: Run Section 2's cleanup command, then:
+       Restart-Service Apache2.4
+       Restart-Service mysql
+
+  PROBLEM: Everything was working but now localhost shows nothing.
+  CAUSE: The PointagePro service or XAMPP stopped.
+  FIX: Check all services:
+       Get-Service Apache2.4, mysql
+       & nssm status PointagePro
+       Start any that are stopped.
+
+  PROBLEM: XAMPP Control Panel says "Port 80 in use".
+  CAUSE: Apache was already started as a service (this is GOOD).
+  FIX: Just close XAMPP Control Panel - Apache is running as a service.
+       Use: Get-Service Apache2.4 to verify it's running.
