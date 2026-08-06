@@ -13,6 +13,7 @@ import { LeaveRequest } from '../../core/models/leave.model';
 import { PayrollItemResponse } from '../../core/models/payroll.model';
 import { CompanySettings } from '../../core/models/settings.model';
 import { openPdfWindow, PdfCompanySettings } from '../../shared/pdf-export.util';
+import { openBadgePdfWindow, BadgeCompanySettings } from '../../shared/badge-print.util';
 
 @Component({
   selector: 'app-employee-detail-dialog',
@@ -42,6 +43,10 @@ import { openPdfWindow, PdfCompanySettings } from '../../shared/pdf-export.util'
           <button class="export-btn" (click)="exportPdf()">
             <mat-icon>picture_as_pdf</mat-icon>
             PDF
+          </button>
+          <button class="export-btn badge-btn" (click)="printBadge()">
+            <mat-icon>credit_card</mat-icon>
+            Badge
           </button>
           <button class="close-btn" mat-dialog-close>
             <mat-icon>close</mat-icon>
@@ -422,6 +427,12 @@ import { openPdfWindow, PdfCompanySettings } from '../../shared/pdf-export.util'
                 <span>Impôt sur le Revenu</span>
                 <span>-{{ fmt(payrollItem.irDeduction) }} DT</span>
               </div>
+              @if (payrollItem.cssDeduction > 0) {
+                <div class="history-row payroll-row deduct">
+                  <span>CSS (Contribution Solidarité)</span>
+                  <span>-{{ fmt(payrollItem.cssDeduction) }} DT</span>
+                </div>
+              }
               <div class="history-row payroll-row total">
                 <span>Salaire Net</span>
                 <span>{{ fmt(payrollItem.netSalary) }} DT</span>
@@ -728,6 +739,7 @@ export class EmployeeDetailDialogComponent implements OnInit {
       payRows.push(`<tr><td>CNSS Employé</td><td style="text-align:right;color:#DC2626">-${this.fmt(p.cnssDeduction)} DT</td></tr>`);
       payRows.push(`<tr><td>Assurance Maladie</td><td style="text-align:right;color:#DC2626">-${this.fmt(p.assuranceDeduction)} DT</td></tr>`);
       payRows.push(`<tr><td>Impôt sur le Revenu</td><td style="text-align:right;color:#DC2626">-${this.fmt(p.irDeduction)} DT</td></tr>`);
+      payRows.push(`<tr><td>CSS (Contribution Solidarité)</td><td style="text-align:right;color:#DC2626">-${this.fmt(p.cssDeduction)} DT</td></tr>`);
       payRows.push(`<tr style="font-weight:700;background:#F0F9FF"><td>Salaire Net</td><td style="text-align:right;color:#2563EB;font-size:15px">${this.fmt(p.netSalary)} DT</td></tr>`);
 
       payrollHtml = `
@@ -762,6 +774,18 @@ export class EmployeeDetailDialogComponent implements OnInit {
     } : undefined;
 
     openPdfWindow(`Fiche Employé — ${emp.firstName} ${emp.lastName}`, period, contentHtml, pdfSettings);
+  }
+
+  printBadge(): void {
+    const emp = this.data;
+    const badgeSettings: BadgeCompanySettings | undefined = this.settings ? {
+      companyName: this.settings.companyName,
+      companyAddress: this.settings.companyAddress,
+      companyEmail: this.settings.companyEmail,
+      companyPhone: this.settings.companyPhone,
+      companyLogo: this.settings.companyLogo,
+    } : undefined;
+    openBadgePdfWindow(emp as any, badgeSettings);
   }
 
   private getAttendanceColor(status: string): string {

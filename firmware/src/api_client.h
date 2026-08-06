@@ -16,8 +16,7 @@ public:
     void begin();
     void setOfflineMode(bool offline);
     bool isOfflineMode();
-    ScanResponse scan(const String& rfidUid);
-    ScanResponse scan(const String& rfidUid, const String& timestamp);
+    ScanResponse scan(const String& rfidUid, const String& externalRef, const String& timestamp);
     bool heartbeat();
 
 private:
@@ -25,5 +24,5 @@ private:
     String _baseUrl = API_BASE_URL;
 
     String httpPost(const String& endpoint, const String& body);
-    ScanResponse scanInternal(const String& rfidUid, const String& timestamp);
+    ScanResponse scanInternal(const String& rfidUid, const String& externalRef, const String& timestamp);
 };

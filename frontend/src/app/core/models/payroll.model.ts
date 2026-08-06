@@ -32,6 +32,7 @@ export interface PayrollItemResponse {
   cnssDeduction: number;
   assuranceDeduction: number;
   irDeduction: number;
+  cssDeduction: number;
   lateDeduction: number;
   absenceDeduction: number;
   missingHours: number;
@@ -43,9 +44,11 @@ export interface PayrollItemResponse {
   daysAbsent: number;
   lateMinutes: number;
   totalOvertimeMinutes: number;
+  scheduledWorkDays: number;
   hourlyRate?: number;
   minuteRate?: number;
   status: string;
+  weeklySchedule?: string;
 }
 
 export interface PayrollItemUpdate {

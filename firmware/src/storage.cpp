@@ -4,6 +4,8 @@
 #include <SPI.h>
 
 void Storage::begin() {
+    _prefs.begin("pointagepro", false);
+
     if (!SD.begin(PIN_SD_CS)) {
         Serial.println("[SD] Card init failed");
         _ready = false;
@@ -40,11 +42,27 @@ String Storage::_extractUid(const String& line) {
     return line.substring(uidStart, uidEnd);
 }
 
+String Storage::_extractRef(const String& line) {
+    int refStart = line.indexOf("\"ref\":\"") + 7;
+    int refEnd = line.indexOf("\"", refStart);
+    if (refStart < 7 || refEnd < 0) return "";
+    return line.substring(refStart, refEnd);
+}
+
+String Storage::nextExternalRef() {
+    uint32_t seq = _prefs.getUInt("scanSeq", 0) + 1;
+    _prefs.putUInt("scanSeq", seq);
+
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%08lu", (unsigned long)seq);
+    return String(DEVICE_SERIAL) + "-" + String(buf);
+}
+
 bool Storage::canLog(const String& uid) {
     return countPendingForUid(uid) < 2;
 }
 
-void Storage::logScan(const String& uid, const String& timestamp) {
+void Storage::logScan(const String& uid, const String& timestamp, const String& externalRef) {
     if (!_ready) return;
 
     File f = SD.open(_logFile, FILE_APPEND);
@@ -53,7 +71,7 @@ void Storage::logScan(const String& uid, const String& timestamp) {
         return;
     }
 
-    String entry = "{\"uid\":\"" + uid + "\",\"ts\":\"" + timestamp + "\",\"synced\":false}\n";
+    String entry = "{\"uid\":\"" + uid + "\",\"ts\":\"" + timestamp + "\",\"ref\":\"" + externalRef + "\",\"synced\":false}\n";
     f.print(entry);
     f.close();
 
@@ -110,6 +128,7 @@ PendingLog Storage::getPendingLog(int index) {
         if (line.indexOf("\"synced\":false") >= 0) {
             if (current == index) {
                 log.uid = _extractUid(line);
+                log.externalRef = _extractRef(line);
 
                 int tsStart = line.indexOf("\"ts\":\"") + 6;
                 int tsEnd = line.indexOf("\"", tsStart);

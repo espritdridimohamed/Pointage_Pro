@@ -185,47 +185,74 @@ export class PayrollListComponent implements OnInit {
   get annualPrimes(): number { return this.totalPrimes * 12; }
   get annualRetenues(): number { return this.totalDeductions * 12; }
 
-  recalcItem(r: PayrollItemResponse): { cnss: number; assurance: number; ir: number; totalDed: number; net: number } {
-    if (!this.settings) return { cnss: r.cnssDeduction || 0, assurance: r.assuranceDeduction || 0, ir: r.irDeduction || 0, totalDed: r.totalDeductions || 0, net: r.netSalary || 0 };
+  recalcItem(r: PayrollItemResponse): { cnss: number; assurance: number; ir: number; css: number; totalDed: number; net: number } {
+    if (!this.settings) return {
+      cnss: r.cnssDeduction || 0,
+      assurance: r.assuranceDeduction || 0,
+      ir: r.irDeduction || 0,
+      css: r.cssDeduction || 0,
+      totalDed: r.totalDeductions || 0,
+      net: r.netSalary || 0
+    };
     const s = this.settings;
     const base = r.baseSalary || 0;
     const gross = base + (r.primeTransport || 0) + (r.primePerformance || 0) + (r.primeOther || 0) + (r.overtimeAmount || 0);
 
-    const cnssCeiling = s.cnssCeiling || 5100;
-    const cnss = Math.min(base, cnssCeiling) * (s.cnssRate || 11) / 100;
-    const assurance = base * (s.assuranceRate || 0.7) / 100;
+    const cnssCeiling = s.cnssCeiling || 5173.085;
+    const cnssBase = Math.min(gross, cnssCeiling);
+    const cnss = cnssBase * (s.cnssRate || 9.18) / 100;
+    const assurance = cnssBase * (s.assuranceRate || 0.5) / 100;
+    const social = cnss + assurance;
 
-    const abatement = s.irAbatement || 1000;
+    const fraisProPercent = s.irFraisProPercent || 10;
+    const fraisProCap = s.irFraisProCap || 2000;
+    const abatement = s.irAbatement || 0;
+    const cssRate = s.irCssRate || 0.5;
     const annualGross = gross * 12;
-    const annualCnss = cnss * 12;
-    const annualTaxable = Math.max(0, annualGross - annualCnss - abatement);
+    const annualSocial = social * 12;
+    const fraisPro = Math.min(annualGross * fraisProPercent / 100, fraisProCap);
+    const annualTaxable = Math.max(0, annualGross - annualSocial - fraisPro - abatement);
 
     const t1 = s.irTranche1 || 5000;
     const t2 = s.irTranche2 || 10000;
     const t3 = s.irTranche3 || 20000;
     const t4 = s.irTranche4 || 30000;
+    const t5 = s.irTranche5 || 40000;
+    const t6 = s.irTranche6 || 50000;
+    const t7 = s.irTranche7 || 70000;
     const r1 = (s.irRate1 || 0) / 100;
     const r2 = (s.irRate2 || 0) / 100;
     const r3 = (s.irRate3 || 0) / 100;
     const r4 = (s.irRate4 || 0) / 100;
     const r5 = (s.irRate5 || 0) / 100;
+    const r6 = (s.irRate6 || 0) / 100;
+    const r7 = (s.irRate7 || 0) / 100;
+    const r8 = (s.irRate8 || 0) / 100;
 
     let rem = annualTaxable;
     let tax = 0;
-    if (rem > 0) { const c = Math.min(rem, t1); tax += c * r1; rem -= c; }
-    if (rem > 0) { const c = Math.min(rem, t2 - t1); tax += c * r2; rem -= c; }
-    if (rem > 0) { const c = Math.min(rem, t3 - t2); tax += c * r3; rem -= c; }
-    if (rem > 0) { const c = Math.min(rem, t4 - t3); tax += c * r4; rem -= c; }
-    if (rem > 0) { tax += rem * r5; }
+    const thresholds = [t1, t2, t3, t4, t5, t6, t7];
+    const rates = [r1, r2, r3, r4, r5, r6, r7];
+    let lower = 0;
+    for (let i = 0; i < thresholds.length; i++) {
+      if (rem <= 0) break;
+      const c = Math.min(rem, thresholds[i] - lower);
+      tax += c * rates[i];
+      rem -= c;
+      lower = thresholds[i];
+    }
+    if (rem > 0) tax += rem * r8;
     const ir = tax / 12;
+    const css = annualTaxable * cssRate / 100 / 12;
 
     const cnssR = Math.round(cnss * 100) / 100;
     const assR = Math.round(assurance * 100) / 100;
     const irR = Math.round(ir * 100) / 100;
-    const totalDed = cnssR + assR + irR;
+    const cssR = Math.round(css * 100) / 100;
+    const totalDed = cnssR + assR + irR + cssR;
     const net = Math.max(0, gross - totalDed);
 
-    return { cnss: cnssR, assurance: assR, ir: irR, totalDed: Math.round(totalDed * 100) / 100, net: Math.round(net * 100) / 100 };
+    return { cnss: cnssR, assurance: assR, ir: irR, css: cssR, totalDed: Math.round(totalDed * 100) / 100, net: Math.round(net * 100) / 100 };
   }
 
   getStatusLabel(status: string): string {

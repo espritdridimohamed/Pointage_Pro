@@ -1,35 +1,52 @@
 package com.pointagepro.leave.dto;
 
+import com.pointagepro.leave.entity.LeaveBalance;
+
+import java.math.BigDecimal;
+
+/**
+ * Per-year balance of one tracked leave type: availableDays = entitlementDays +
+ * carriedOverDays + adjustedDays - takenDays.
+ */
 public class LeaveBalanceResponse {
 
-    private String type;
-    private Long total;
-    private long used;
-    private Long remaining;
-    private String color;
+    private Long employeeId;
+    private String leaveTypeCode;
+    private String leaveTypeName;
+    private Integer year;
+    private BigDecimal entitlementDays;
+    private BigDecimal carriedOverDays;
+    private BigDecimal adjustedDays;
+    private BigDecimal takenDays;
+    private BigDecimal availableDays;
 
-    public LeaveBalanceResponse() {}
-
-    public LeaveBalanceResponse(String type, Long total, long used, Long remaining, String color) {
-        this.type = type;
-        this.total = total;
-        this.used = used;
-        this.remaining = remaining;
-        this.color = color;
+    public LeaveBalanceResponse() {
     }
 
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public static LeaveBalanceResponse from(LeaveBalance balance) {
+        LeaveBalanceResponse dto = new LeaveBalanceResponse();
+        dto.employeeId = balance.getEmployee().getId();
+        dto.leaveTypeCode = balance.getLeaveType().getCode();
+        dto.leaveTypeName = balance.getLeaveType().getName();
+        dto.year = balance.getYear();
+        dto.entitlementDays = balance.getEntitlementDays();
+        dto.carriedOverDays = balance.getCarriedOverDays();
+        dto.adjustedDays = balance.getAdjustedDays();
+        dto.takenDays = balance.getTakenDays();
+        dto.availableDays = balance.getEntitlementDays()
+                .add(balance.getCarriedOverDays())
+                .add(balance.getAdjustedDays())
+                .subtract(balance.getTakenDays());
+        return dto;
+    }
 
-    public Long getTotal() { return total; }
-    public void setTotal(Long total) { this.total = total; }
-
-    public long getUsed() { return used; }
-    public void setUsed(long used) { this.used = used; }
-
-    public Long getRemaining() { return remaining; }
-    public void setRemaining(Long remaining) { this.remaining = remaining; }
-
-    public String getColor() { return color; }
-    public void setColor(String color) { this.color = color; }
+    public Long getEmployeeId() { return employeeId; }
+    public String getLeaveTypeCode() { return leaveTypeCode; }
+    public String getLeaveTypeName() { return leaveTypeName; }
+    public Integer getYear() { return year; }
+    public BigDecimal getEntitlementDays() { return entitlementDays; }
+    public BigDecimal getCarriedOverDays() { return carriedOverDays; }
+    public BigDecimal getAdjustedDays() { return adjustedDays; }
+    public BigDecimal getTakenDays() { return takenDays; }
+    public BigDecimal getAvailableDays() { return availableDays; }
 }

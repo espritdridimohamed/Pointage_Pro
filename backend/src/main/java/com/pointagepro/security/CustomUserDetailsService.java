@@ -1,7 +1,7 @@
 package com.pointagepro.security;
 
-import com.pointagepro.auth.User;
-import com.pointagepro.auth.UserRepository;
+import com.pointagepro.auth.entity.User;
+import com.pointagepro.auth.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

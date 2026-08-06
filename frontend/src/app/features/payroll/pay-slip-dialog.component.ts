@@ -56,8 +56,8 @@ export class PaySlipDialogComponent {
     const now = new Date();
     this.paymentDate = `${now.getDate()} ${this.monthNames[now.getMonth()]} ${now.getFullYear()}`;
     this.workedDays = this.record.daysWorked || 0;
-    this.totalWorkDays = this.countWorkDaysInMonth(data.month, data.year);
-    if (this.totalWorkDays <= 0) this.totalWorkDays = 26;
+    this.totalWorkDays = this.countScheduledDaysInMonth(data.month, data.year);
+    if (this.totalWorkDays <= 0) this.totalWorkDays = this.record.scheduledWorkDays || Math.max(26, this.workedDays);
 
     this.companyName = this.settings?.companyName || 'Sepab Agro';
     this.companyNameShort = this.companyName.split(' ')[0];
@@ -71,58 +71,82 @@ export class PaySlipDialogComponent {
     this.buildPaySlip();
   }
 
-  private countWorkDaysInMonth(month: number, year: number): number {
+  private countScheduledDaysInMonth(month: number, year: number): number {
+    if (this.record.scheduledWorkDays && this.record.scheduledWorkDays > 0) {
+      return this.record.scheduledWorkDays;
+    }
+    let schedule: Record<string, { start: string; end: string }> = {};
+    if (this.record.weeklySchedule) {
+      try { schedule = JSON.parse(this.record.weeklySchedule); } catch {}
+    }
     const daysInMonth = new Date(year, month, 0).getDate();
-    const workDaysStr = this.settings?.workDays || 'LUN,MAR,MER,JEU,VEN,SAM';
-    const workDayNames = workDaysStr.split(',').map(d => d.trim().toUpperCase());
     const dayMap = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
     let count = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month - 1, d);
-      if (workDayNames.includes(dayMap[date.getDay()])) count++;
+      if (schedule[dayMap[date.getDay()]]) count++;
     }
     return count;
   }
 
-  private computeDeductions(gross: number, baseSalary: number): { cnss: number; assurance: number; ir: number } {
+  private computeDeductions(gross: number): { cnss: number; assurance: number; ir: number; css: number } {
     const s = this.settings;
-    const cnssRate = s.cnssRate || 7;
-    const assuranceRate = s.assuranceRate || 0.9;
-    const cnssCeiling = s.cnssCeiling || 5100;
-    const abatement = s.irAbatement || 1000;
+    const cnssRate = s.cnssRate || 9.18;
+    const assuranceRate = s.assuranceRate || 0.5;
+    const cnssCeiling = s.cnssCeiling || 5173.085;
+    const fraisProPercent = s.irFraisProPercent || 10;
+    const fraisProCap = s.irFraisProCap || 2000;
+    const cssRate = s.irCssRate || 0.5;
+    const abatement = s.irAbatement || 0;
 
-    const cnss = Math.min(baseSalary, cnssCeiling) * cnssRate / 100;
-    const assurance = baseSalary * assuranceRate / 100;
+    const cnssBase = Math.min(gross, cnssCeiling);
+    const cnss = cnssBase * cnssRate / 100;
+    const assurance = cnssBase * assuranceRate / 100;
+    const social = cnss + assurance;
 
     const annualGross = gross * 12;
-    const annualCnss = cnss * 12;
-    const annualTaxable = Math.max(0, annualGross - annualCnss - abatement);
+    const annualSocial = social * 12;
+    const fraisPro = Math.min(annualGross * fraisProPercent / 100, fraisProCap);
+    const annualTaxable = Math.max(0, annualGross - annualSocial - fraisPro - abatement);
 
     const t1 = s.irTranche1 || 5000;
     const t2 = s.irTranche2 || 10000;
     const t3 = s.irTranche3 || 20000;
     const t4 = s.irTranche4 || 30000;
+    const t5 = s.irTranche5 || 40000;
+    const t6 = s.irTranche6 || 50000;
+    const t7 = s.irTranche7 || 70000;
     const r1 = (s.irRate1 || 0) / 100;
     const r2 = (s.irRate2 || 0) / 100;
     const r3 = (s.irRate3 || 0) / 100;
     const r4 = (s.irRate4 || 0) / 100;
     const r5 = (s.irRate5 || 0) / 100;
+    const r6 = (s.irRate6 || 0) / 100;
+    const r7 = (s.irRate7 || 0) / 100;
+    const r8 = (s.irRate8 || 0) / 100;
 
+    const thresholds = [t1, t2, t3, t4, t5, t6, t7];
+    const rates = [r1, r2, r3, r4, r5, r6, r7, r8];
     let remaining = annualTaxable;
     let annualTax = 0;
-
-    if (remaining > 0) { const c = Math.min(remaining, t1); annualTax += c * r1; remaining -= c; }
-    if (remaining > 0) { const c = Math.min(remaining, t2 - t1); annualTax += c * r2; remaining -= c; }
-    if (remaining > 0) { const c = Math.min(remaining, t3 - t2); annualTax += c * r3; remaining -= c; }
-    if (remaining > 0) { const c = Math.min(remaining, t4 - t3); annualTax += c * r4; remaining -= c; }
-    if (remaining > 0) { annualTax += remaining * r5; }
+    let lower = 0;
+    for (let i = 0; i < thresholds.length; i++) {
+      if (remaining <= 0) break;
+      const c = Math.min(remaining, thresholds[i] - lower);
+      annualTax += c * rates[i];
+      remaining -= c;
+      lower = thresholds[i];
+    }
+    if (remaining > 0) annualTax += remaining * r8;
 
     const ir = annualTax / 12;
+    const css = annualTaxable * cssRate / 100 / 12;
 
     return {
       cnss: Math.round(cnss * 100) / 100,
       assurance: Math.round(assurance * 100) / 100,
-      ir: Math.round(ir * 100) / 100
+      ir: Math.round(ir * 100) / 100,
+      css: Math.round(css * 100) / 100
     };
   }
 
@@ -132,10 +156,10 @@ export class PaySlipDialogComponent {
 
     const gross = (r.baseSalary || 0) + (r.primeTransport || 0) + (r.primePerformance || 0) + (r.primeOther || 0) + (r.overtimeAmount || 0);
 
-    const cnssRate = s.cnssRate || 7;
-    const assuranceRate = s.assuranceRate || 0.9;
+    const cnssRate = s.cnssRate || 9.18;
+    const assuranceRate = s.assuranceRate || 0.5;
 
-    const ded = this.computeDeductions(gross, r.baseSalary || 0);
+    const ded = this.computeDeductions(gross);
 
     this.remunerations = [
       { label: 'Salaire de base', base: this.fmt(r.baseSalary) + ' DT', taux: '—', montant: r.baseSalary },
@@ -145,39 +169,35 @@ export class PaySlipDialogComponent {
       { label: 'Heures supplémentaires', base: (r.overtimeHours || 0) + ' h', taux: '×' + (s.overtimeRate || 1.5), montant: r.overtimeAmount || 0 },
     ];
 
+    const baseLabel = this.fmt(gross) + ' DT';
     this.cotisations = [
-      { label: 'CNSS (salarié)', base: this.fmt(r.baseSalary) + ' DT', taux: cnssRate + '%', montant: ded.cnss },
-      { label: 'Assurance maladie', base: this.fmt(r.baseSalary) + ' DT', taux: assuranceRate + '%', montant: ded.assurance },
+      { label: 'CNSS (salarié)', base: baseLabel, taux: cnssRate + '%', montant: ded.cnss },
+      { label: 'Assurance maladie', base: baseLabel, taux: assuranceRate + '%', montant: ded.assurance },
       { label: 'IR (barème progressif)', base: '—', taux: 'barème', montant: ded.ir },
+      { label: 'CSS (Contribution Solidarité)', base: '—', taux: (s.irCssRate || 0.5) + '%', montant: ded.css },
     ];
 
-    if ((r.absenceDeduction || 0) > 0) {
-      this.cotisations.push({
-        label: 'Absence',
-        base: (r.daysAbsent || 0) + ' jour(s) · ' + this.fmt(r.absenceHours || 0) + ' h',
-        taux: this.fmt(r.hourlyRate || 0) + ' DT/h',
-        montant: r.absenceDeduction
-      });
-    }
+    this.cotisations.push({
+      label: 'Absence',
+      base: (r.daysAbsent || 0) + ' jour(s) · ' + this.fmt(r.absenceHours || 0) + ' h',
+      taux: this.fmt(r.hourlyRate || 0) + ' DT/h',
+      montant: r.absenceDeduction
+    });
 
-    if ((r.missingHoursDeduction || 0) > 0) {
-      this.cotisations.push({
-        label: 'Heures manquées',
-        base: this.fmt(r.missingHours || 0) + ' h',
-        taux: this.fmt(r.hourlyRate || 0) + ' DT/h',
-        montant: r.missingHoursDeduction
-      });
-    }
+    this.cotisations.push({
+      label: 'Heures manquées',
+      base: this.fmt(r.missingHours || 0) + ' h',
+      taux: this.fmt(r.hourlyRate || 0) + ' DT/h',
+      montant: r.missingHoursDeduction
+    });
 
-    if ((r.lateDeduction || 0) > 0) {
-      const minuteRateVal = r.minuteRate || ((r.baseSalary || 0) / 208 / 60);
-      this.cotisations.push({
-        label: 'Retard',
-        base: r.lateMinutes + ' min',
-        taux: this.fmt(minuteRateVal) + ' DT/min',
-        montant: r.lateDeduction
-      });
-    }
+    const minuteRateVal = r.minuteRate || ((r.baseSalary || 0) / 208 / 60);
+    this.cotisations.push({
+      label: 'Retard',
+      base: r.lateMinutes + ' min',
+      taux: this.fmt(minuteRateVal) + ' DT/min',
+      montant: r.lateDeduction
+    });
 
     this.brutTotal = this.remunerations.reduce((s, l) => s + l.montant, 0);
     this.totalRetenues = this.cotisations.reduce((s, l) => s + l.montant, 0);
@@ -361,9 +381,6 @@ export class PaySlipDialogComponent {
           <div class="info-row"><span class="info-label">Date de paiement :</span> <span class="info-value">${this.paymentDate}</span></div>
           <div class="info-row"><span class="info-label">Mode :</span> <span class="info-value">Virement bancaire</span></div>
           <div class="info-row"><span class="info-label">Jours travaillés :</span> <span class="info-value">${this.workedDays} / ${this.totalWorkDays}</span></div>
-          ${r.daysAbsent ? `<div class="info-row"><span class="info-label">Jours d'absence :</span> <span class="info-value" style="color:#DC2626">${r.daysAbsent}</span></div>` : ''}
-          ${r.lateMinutes ? `<div class="info-row"><span class="info-label">Retard total :</span> <span class="info-value" style="color:#F59E0B">${r.lateMinutes} min</span></div>` : ''}
-          ${r.missingHours ? `<div class="info-row"><span class="info-label">Heures manquées :</span> <span class="info-value" style="color:#F59E0B">${this.fmt(r.missingHours)} h</span></div>` : ''}
           ${r.overtimeHours ? `<div class="info-row"><span class="info-label">Heures supplémentaires :</span> <span class="info-value" style="color:#16A34A">${this.fmt(r.overtimeHours)} h</span></div>` : ''}
         </div>
       </div>

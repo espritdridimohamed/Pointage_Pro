@@ -129,6 +129,13 @@
   mat-icon { font-size: 14px; width: 14px; height: 14px; }
 }
 
+.badge-btn {
+  background: rgba(22, 163, 74, 0.25);
+  border-color: rgba(22, 163, 74, 0.4);
+
+  &:hover { background: rgba(22, 163, 74, 0.4); }
+}
+
 .close-btn {
   width: 30px;
   height: 30px;

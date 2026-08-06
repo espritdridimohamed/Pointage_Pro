@@ -10,6 +10,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EmployeeRequest, Employee } from '../../core/models/employee.model';
 import { EmployeeService } from '../../core/services/employee.service';
+import { SettingsService } from '../../core/services/settings.service';
+import { openBadgePdfWindow, BadgeCompanySettings } from '../../shared/badge-print.util';
 
 @Component({
   selector: 'app-employee-form-dialog',
@@ -58,6 +60,7 @@ export class EmployeeFormDialogComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private employeeService: EmployeeService,
+    private settingsService: SettingsService,
     private dialogRef: MatDialogRef<EmployeeFormDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { mode: 'create' | 'edit'; employee?: Employee }
   ) {
@@ -205,7 +208,24 @@ export class EmployeeFormDialogComponent implements OnInit {
       : this.employeeService.create(request);
 
     operation.subscribe({
-      next: () => this.dialogRef.close(true),
+      next: (res) => {
+        if (!this.isEdit) {
+          this.settingsService.get().subscribe({
+            next: (settingsRes) => {
+              const s = settingsRes.data;
+              const badgeSettings: BadgeCompanySettings | undefined = s ? {
+                companyName: s.companyName,
+                companyAddress: s.companyAddress,
+                companyEmail: s.companyEmail,
+                companyPhone: s.companyPhone,
+                companyLogo: s.companyLogo,
+              } : undefined;
+              openBadgePdfWindow(formValue as any, badgeSettings);
+            }
+          });
+        }
+        this.dialogRef.close(true);
+      },
       error: (err) => {
         this.loading = false;
         this.errorMessage = err.error?.message || 'An error occurred';

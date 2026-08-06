@@ -6,14 +6,8 @@ export interface CompanySettings {
   companyEmail: string;
   companyPhone: string;
   companyLogo: string | null;
-  workStartTime?: string;
-  workEndTime?: string;
-  workDaysPerWeek?: number;
-  workDays?: string;
   lateGraceMinutes: number;
-  monthlyWorkHours?: number;
   overtimeRate: number;
-  overtimeThresholdHours?: number;
   currency?: string;
   payDay?: number;
   cnssRate: number;
@@ -30,7 +24,16 @@ export interface CompanySettings {
   irRate4: number;
   irTranche5: number;
   irRate5: number;
+  irTranche6: number;
+  irRate6: number;
+  irTranche7: number;
+  irRate7: number;
+  irTranche8: number;
+  irRate8: number;
   irAbatement: number;
+  irFraisProPercent: number;
+  irFraisProCap: number;
+  irCssRate: number;
   language: string;
   theme: string;
 }

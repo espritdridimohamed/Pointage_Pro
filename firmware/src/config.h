@@ -1,7 +1,10 @@
 #pragma once
 #include <Arduino.h>
 
-// ─── WiFi ───
+// ─── Device identity (used in external_ref and heartbeat) ───
+#define DEVICE_SERIAL      "ESP32-001"
+
+// ─── WiFi (TODO: move to provisioning/NVS - do not commit real secrets) ───
 #define WIFI_SSID          "iPhone_Hamma"
 #define WIFI_PASSWORD      "269414144"
 #define WIFI_TIMEOUT_MS    10000

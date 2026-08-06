@@ -62,6 +62,7 @@
 | company_settings   | Configurable key-value pairs   | —                      |
 | payrolls           | Monthly payroll records        | —                      |
 | payroll_items      | Per-employee payroll details   | → payrolls, → employees|
+| payroll_attendance_snapshots | Frozen per-day attendance facts per payroll run | → payrolls, → employees |
 | notifications      | In-app notifications           | → users                |
 
 #### users
@@ -402,20 +403,23 @@ frontend/src/app/
 
 ```
 backend/src/main/java/com/pointagepro/
-├── config/            # SecurityConfig, CorsConfig
+├── config/            # SecurityConfig (JWT + /esp32/** permitAll + 401 entry point), CorsConfig
 ├── security/          # JWT provider, filter, user details
-├── shared/            # ApiResponse, exceptions, utilities
-├── auth/              # AuthController, AuthService, User entity
-├── employee/          # EmployeeController, Service, Repository, Entity, DTOs
-├── attendance/        # AttendanceController, Service, Repository, Entity, DTOs
-├── leave/             # LeaveRequestController, Service, Repository, Entity, DTOs (COMPLETE)
-├── payroll/           # PayrollController, Service, DTOs
-├── reports/           # ReportController, Service
-├── statistics/        # StatisticsController, Service
-├── dashboard/         # DashboardController, Service, DTOs
-├── settings/          # SettingsController, Service, Repository, Entity
-├── esp32/             # Esp32Controller, Service, DTOs
-└── logging/           # AsyncLogger (SLF4J + Logback)
+├── shared/            # ApiResponse, PageResponse, exceptions, utilities
+├── auth/              # User entity, CurrentUserService (tenant from users.employee_id)
+├── employee/          # Employee entity, EmployeeRepository
+├── attendance/        # engine + services + controller/DTOs (modules 1 + 2 DONE)
+│   ├── engine/        # DayCalculator pure engine (COMPLETE)
+│   ├── entity/        # AttendanceEvent, AttendanceSummary, EventType, ...
+│   ├── repository/    # AttendanceEventRepository, AttendanceSummaryRepository (3 entity-graph finders)
+│   ├── service/       # AttendanceEngineService, AttendanceEventService, AttendanceSummaryService
+│   ├── controller/    # AttendanceEventController (/attendance/events), AttendanceSummaryController (/attendance/summaries, /recompute)
+│   └── dto/           # TerminalScanRequest/Response, AttendanceEventRequest/Response, AttendanceSummaryResponse, RecomputeStats, RecomputeRequest/AllRequest
+├── leave/             # LeaveRequestRepository + entities + LeaveService/Controller/DTOs (module 4 DONE)
+├── payroll/           # PayrollAttendanceSnapshot entity + repository
+├── terminal/          # Terminal + TerminalStatus entities, repos, TerminalService (scan gating)
+├── esp32/             # Esp32ScanController (/esp32/scan), Esp32ApiKeyService (X-API-Key)
+└── (reports / statistics / dashboard / settings / logging: planned)
 ```
 
 #### ESP32 Firmware Structure
@@ -494,12 +498,14 @@ firmware/
 
 **Still pending:**
 - ESP32 firmware: scaffolded (`firmware/`), awaiting hardware wiring (WS2812B LEDs, button, SD card)
-- ESP32 backend: `Esp32Controller` + DTOs created, API key auth via `X-API-Key` header
+- ESP32 backend scan flow: **DONE (module 1)** — `POST /esp32/scan` with shared-key auth (`X-API-Key`), terminal resolution from `externalRef`, server-side IN/OUT alternation, replay/duplicate dedup, recompute → summary (verified end-to-end 2026-08-05). Still pending: `/esp32/heartbeat` + firmware version check + enrollment (module 6)
+- Attendance summaries & recompute API: **DONE (module 2)** — `GET /attendance/summaries`, `/summaries/{id}`, `/summaries/day` + `/today` (compute-on-miss `api:day`/`api:today`), `POST /attendance/recompute` + `/recompute/all` (authority `attendance.recalculate`, reason ≤255, 366-day span cap), tenant 404, entity-graph reads; verified end-to-end 2026-08-05 (68 tests green). **Adjustments API + approval workflow: DONE (module 3)** — `/attendance/adjustments` create/list/`{id}`/`pending`/approve/reject/cancel, frozen-period 409, 1440-cap dry-run 400, immediate apply on empty chain, apply → engine recompute `adjustment:<id>`, optimistic locking, audit trail (V11–V13, 100 tests green, E2E verified 2026-08-05). Still pending: payroll snapshot consumption, monthly report binding (module 5)
+- **Leave management + approval workflow + balance: DONE (module 4)** — `/leaves` create/list/`{id}`/`pending`/approve/reject/cancel + `/leaves/balance/{employeeId}?year=`, 2-step chain (MANAGER → HR), overlap 409, cross-year per-year balance debit at approval (auto-provision tracked rows) + `leave_balance_logs`, refund on HR/ADMIN cancel of APPROVED + `leave-cancel:{id}` recompute, frozen-month 409, optimistic locking, audit trail, ADMIN universal approver (V14, 138 tests green, live E2E verified 2026-08-06). Still pending: frontend binding, payroll consumption of leave
 - Notification system (COMPLETE)
 - 2FA + Sessions + Login History + Email + Notification Preferences (COMPLETE)
 - RTC timezone fix (NTP time still -1h from real Tunisia time)
 
-**DB Migrations:** V1–V24 all applied
+**DB Migrations:** V1–V14 all applied
 - Fingerprint authentication
 - Face recognition
 - Door access control
@@ -508,9 +514,11 @@ firmware/
 - Multi-branch support
 - API documentation (Swagger/OpenAPI)
 
-**DB Migrations:** V1–V19 all applied
-
 ### [VERSION_NOTES]
 
+- **Module 4 (leave management + approval + balance) 2026-08-06:** `/leaves` — `POST` create (`leave.write`; MANAGER granted it in V14), `GET` list (filters employeeId/statusCode/from/to), `GET /{id}`, `GET /pending` (only requests whose current pending step the caller can decide), `POST /{id}/approve|reject` (optional comment), `POST /{id}/cancel` (`leave.approve` **or** `leave.write` — the `leave.write` path is the requester withdrawal of their own `PENDING` request; service denies everyone else), `GET /balance/{employeeId}?year=`. Chain materialized at creation (`approvals`, `LEAVE`): step 1 MANAGER = requester's department manager (skipped when none / requester is the manager / no active account), step 2 HR (always present, never auto-decided — an HR requester needs another HR). Requester never decides own steps; ADMIN is a universal approver (except own requests). `daysRequested` server-computed (weekdays − company holidays). Overlap 409 (PENDING+APPROVED); span >366 days 400; no working days → 400; no balance check at create. Approve: frozen-month 409 → per-step approval → on last step, same-transaction per-year balance debit (tracked types = `default_days_per_year IS NOT NULL`; auto-provisions missing rows with the type default + audit; `leave_balance_logs` row per year, ref `LEAVE:<id>`) + engine recompute `leave:<id>`; insufficient balance → dry-run 400 and the request stays PENDING. Reject: `REJECTED` + `rejectedReason`, all remaining steps rejected, never debits. Cancel: creator-while-PENDING or HR/ADMIN (PENDING or APPROVED); APPROVED-cancel → frozen guard 409 first, then same-transaction refund + recompute `leave-cancel:<id>`. Terminal states immutable → 409. `@Version` optimistic locking on `LeaveRequest` + `LeaveBalance`. Migration **V14** (`version` columns, `leave_balance_logs.operation`, overlap index `idx_leave_requests_overlap`, MANAGER `leave.write`). New: `leave` package (entity/repository/service/controller/dto), shared `ApprovalAuthority` + shared `ApprovalStepResponse` (extracted from attendance, applied to both workflows — ADMIN universal approver/creator aligned on adjustments too). 138 tests green; live E2E (21 scenarios) verified against MySQL. **Fixed during live E2E:** cancel endpoint only required `leave.approve`, blocking requester withdrawal (USER lacks that authority) → relaxed to `leave.approve or leave.write`.
+- **Module 3 (attendance adjustments + approval workflow) 2026-08-05:** `/attendance/adjustments` — `POST` create (`attendance.adjust`), `GET` list (filters employeeId/statusCode/from/to), `GET /{id}`, `GET /pending` (only steps the caller can decide), `POST /{id}/approve|reject` (optional comment), `POST /{id}/cancel` (creator-while-PENDING or HR; reason required). Chain materialized at creation (`approvals`, `ATTENDANCE_ADJUST`): step 1 MANAGER = target's department manager (skipped when none / target is manager / creator is manager), step 2 HR (auto-decided by the creator when the creator is HR); creator and target can never decide a step; empty chain → created directly `APPLIED` in the same transaction. Last approval → `APPLIED` + same-transaction single-day engine recompute with `recompute_reason = "adjustment:<id>"`; `summary_id` attached by the engine, never by the client. Frozen month (`payrolls` VALIDATED/APPROVED/PAID) → 409; 1440-min daily cap → dry-run 400 at approve (engine clamp stays the backstop); terminal states (`APPLIED`/`REJECTED`/`CANCELLED`) immutable → 409. `@Version` optimistic locking on `AttendanceAdjustment` + `Approval` (race → 409); every transition audit-logged via new `com.pointagepro.audit` package. Migrations **V11** (`CANCELLED` statuses), **V12** (`version` columns), **V13** (`attendance_adjustments.work_date`). New: `AttendanceAdjustmentService`, `AttendanceAdjustmentController`, adjustment DTOs, `AuditService`/`AuditLog`, `ConflictException`. Fixed during live E2E: native `isMonthFrozen` Boolean-cast crash (MySQL returns Integer for `CASE WHEN…THEN TRUE`) → count + default method; cap dry-run never fired (engine clamps `workedMinutes`) → new `DayResult.rawWorkedMinutes` pre-clamp value checked in the service. 100 tests green; full E2E verified against MySQL (create PENDING, cross-dept + creator 403, manager approve → APPLIED + recompute, terminal 409, over-cap 400 stays PENDING, reject, cancel, frozen 409, audit rows).
+- **Module 2 (attendance API — summaries, day status, recompute) 2026-08-05:** `GET /attendance/summaries` (list, employeeId required, from/to optional 30d-back → today), `GET /attendance/summaries/{id}` (tenant 404), `GET /attendance/summaries/day` + `/today` (compute-on-miss with reasons `api:day`/`api:today`), `POST /attendance/recompute` (per-employee, reason ≤255 default `api:recompute`) + `POST /attendance/recompute/all` (company-wide, returns `RecomputeStats`); reads gated by `attendance.read`, recomputes by `attendance.recalculate` (seeded on HR). New: `AttendanceSummaryService`, `AttendanceSummaryController`, DTOs (`AttendanceSummaryResponse` with `@JsonFormat HH:mm`, `RecomputeStats`, `RecomputeRequest/AllRequest`), 3 entity-graph repository finders (inline `attributePaths` array). Fixed two live bugs: Hibernate `Unable to locate Attribute` (attributePaths was one String, not String[]) and `entityEntry is null` NPE during post-write entity-graph reads (detached `computedBy` user → resolved via `UserRepository.getReferenceById` in the engine transaction). 68 tests green; full E2E verified against MySQL (list, single, day compute-on-miss, today, per-employee recompute, recompute/all, 400 validation).
+- **Module 1 (attendance API — event intake) 2026-08-05:** `ATTENDANCE_API_CONTRACT.md` created; `/esp32/scan` (flat firmware-shaped response, X-API-Key auth, terminal resolution from `externalRef`, type-less punch alternation IN/OUT, 60 s type-agnostic duplicate window, externalRef replay dedup, company-consistency check); `/attendance/events` POST (`attendance.write`) + GET (`attendance.read`) with JWT + method security (`@EnableMethodSecurity`); `SecurityConfig` gained a 401 JSON entry point for unauthenticated staff requests. New packages: `terminal` (entity/repo/service), `esp32` (controller/key service), `attendance.controller`, `attendance.dto`. 44 tests green; boot clean (Flyway V1–V10, Hibernate validate); device flow verified against MySQL (IN→OUT→replay, summary computed PRESENT/480).
 - **Angular:** Using 19.2.x instead of 22.x because system Node.js is v18 (Angular 22 requires Node 22+). Upgrade Node to v22+ to use Angular 22.
 - **Spring Boot:** Using 3.4.5 (latest stable with full ecosystem support).

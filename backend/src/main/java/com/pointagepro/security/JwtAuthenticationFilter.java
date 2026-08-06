@@ -1,7 +1,6 @@
 package com.pointagepro.security;
 
-import com.pointagepro.auth.UserSession;
-import com.pointagepro.auth.UserSessionRepository;
+import com.pointagepro.auth.repository.UserSessionRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -53,8 +52,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username = tokenProvider.getUsernameFromToken(token);
             String tokenHash = hashToken(token);
 
-            List<UserSession> sessions = sessionRepository.findByTokenHashAndRevokedFalse(tokenHash);
-            if (sessions.isEmpty()) {
+            var session = sessionRepository.findByTokenHash(tokenHash);
+            if (session.isEmpty() || session.get().getExpiresAt().isBefore(LocalDateTime.now())) {
                 filterChain.doFilter(request, response);
                 return;
             }

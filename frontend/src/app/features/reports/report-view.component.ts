@@ -21,11 +21,10 @@ Chart.register(...registerables);
 })
 export class ReportViewComponent implements OnInit {
   selectedPeriod: 'Mensuel' | 'Annuel' = 'Mensuel';
-  selectedMonth = 'Juillet';
-  selectedYear = '2026';
-
   months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-  years = ['2024', '2025', '2026'];
+  selectedMonth = this.months[new Date().getMonth()];
+  years = [String(new Date().getFullYear() - 2), String(new Date().getFullYear() - 1), String(new Date().getFullYear())];
+  selectedYear = String(new Date().getFullYear());
 
   private reportData: ReportData | null = null;
   settings: CompanySettings | null = null;

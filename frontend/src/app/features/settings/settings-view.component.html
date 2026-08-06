@@ -109,6 +109,18 @@
     </div>
     <div class="form-grid-2">
       <div class="form-group">
+        <label class="form-label">Frais Professionnels (%)</label>
+        <input type="number" step="0.01" class="form-input" [(ngModel)]="settings.irFraisProPercent">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Plafond Frais Pro (DT/an)</label>
+        <input type="number" step="0.01" class="form-input" [(ngModel)]="settings.irFraisProCap">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CSS (%)</label>
+        <input type="number" step="0.001" class="form-input" [(ngModel)]="settings.irCssRate">
+      </div>
+      <div class="form-group">
         <label class="form-label">Abattement Annuel (DT)</label>
         <input type="number" class="form-input" [(ngModel)]="settings.irAbatement">
       </div>
@@ -143,6 +155,21 @@
         <span class="ir-label">Tranche 5</span>
         <input type="number" class="form-input" [(ngModel)]="settings.irTranche5">
         <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate5">
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 6</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche6">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate6">
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 7</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche7">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate7">
+      </div>
+      <div class="ir-row">
+        <span class="ir-label">Tranche 8</span>
+        <input type="number" class="form-input" [(ngModel)]="settings.irTranche8">
+        <input type="number" step="0.1" class="form-input" [(ngModel)]="settings.irRate8">
       </div>
     </div>
   </div>

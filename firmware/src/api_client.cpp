@@ -17,15 +17,7 @@ bool ApiClient::isOfflineMode() {
     return _offlineMode;
 }
 
-ScanResponse ApiClient::scan(const String& rfidUid) {
-    return scanInternal(rfidUid, "");
-}
-
-ScanResponse ApiClient::scan(const String& rfidUid, const String& timestamp) {
-    return scanInternal(rfidUid, timestamp);
-}
-
-ScanResponse ApiClient::scanInternal(const String& rfidUid, const String& timestamp) {
+ScanResponse ApiClient::scan(const String& rfidUid, const String& externalRef, const String& timestamp) {
     ScanResponse response;
     response.success = false;
 
@@ -37,6 +29,9 @@ ScanResponse ApiClient::scanInternal(const String& rfidUid, const String& timest
 
     JsonDocument doc;
     doc["rfidUid"] = rfidUid;
+    if (externalRef.length() > 0) {
+        doc["externalRef"] = externalRef;
+    }
     if (timestamp.length() > 0) {
         doc["timestamp"] = timestamp;
     }
@@ -71,7 +66,7 @@ bool ApiClient::heartbeat() {
     if (WiFi.status() != WL_CONNECTED) return false;
 
     JsonDocument doc;
-    doc["deviceId"] = "ESP32-001";
+    doc["deviceId"] = DEVICE_SERIAL;
     doc["ipAddress"] = WiFi.localIP().toString();
     doc["rssi"] = WiFi.RSSI();
     doc["firmwareVersion"] = "1.0.0";

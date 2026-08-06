@@ -80,6 +80,12 @@
               <span class="info-label">Jours travaillés :</span>
               <span class="info-value">{{ workedDays }} / {{ totalWorkDays }}</span>
             </div>
+            @if (record.overtimeHours) {
+            <div class="info-row">
+              <span class="info-label">Heures supplémentaires :</span>
+              <span class="info-value" style="color:#16A34A">{{ fmt(record.overtimeHours) }} h</span>
+            </div>
+            }
           </div>
         </div>
       </div>

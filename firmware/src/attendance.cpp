@@ -96,7 +96,8 @@ void Attendance::loop() {
 }
 
 void Attendance::handleOnlineScan(const String& uid) {
-    ScanResponse resp = _api->scan(uid);
+    String externalRef = _storage->nextExternalRef();
+    ScanResponse resp = _api->scan(uid, externalRef, "");
 
     if (resp.success) {
         _display->showSuccess(resp.employeeName, resp.matricule, resp.action, resp.time);
@@ -123,7 +124,8 @@ void Attendance::handleOfflineScan(const String& uid) {
         return;
     }
 
-    _storage->logScan(uid, _rtc->getDateTime());
+    String externalRef = _storage->nextExternalRef();
+    _storage->logScan(uid, _rtc->getDateTime(), externalRef);
     _feedback->setBuzzer(BUZZ_SHORT);
 
     String time = _rtc->getTime();
@@ -197,7 +199,7 @@ void Attendance::syncPendingLogs() {
 
         bool serverReached = false;
         for (int retry = 0; retry < 3; retry++) {
-            ScanResponse resp = _api->scan(log.uid, log.timestamp);
+            ScanResponse resp = _api->scan(log.uid, log.externalRef, log.timestamp);
 
             if (resp.success) {
                 _storage->markSynced(0);
