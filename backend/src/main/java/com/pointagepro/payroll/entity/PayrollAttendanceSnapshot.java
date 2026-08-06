@@ -73,6 +73,9 @@ public class PayrollAttendanceSnapshot {
     @JoinColumn(name = "status_id")
     private AttendanceStatus status;
 
+    @Column(name = "is_paid_leave", nullable = false)
+    private Boolean isPaidLeave = false;
+
     @Column(name = "first_in")
     private LocalTime firstIn;
 

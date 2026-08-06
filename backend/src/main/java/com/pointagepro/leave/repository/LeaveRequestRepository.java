@@ -34,6 +34,10 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
     List<LeaveRequest> findByEmployeeIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateAsc(
             Long employeeId, LocalDate endDate, LocalDate startDate);
 
+    @EntityGraph(attributePaths = {"leaveType"})
+    List<LeaveRequest> findByEmployeeIdAndStatus_CodeAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByStartDateAsc(
+            Long employeeId, String statusCode, LocalDate endDate, LocalDate startDate);
+
     boolean existsByEmployeeIdAndStatusCodeAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             Long employeeId, String statusCode, LocalDate endDate, LocalDate startDate);
 

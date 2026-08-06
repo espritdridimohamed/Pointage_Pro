@@ -17,12 +17,16 @@ public interface PayrollAttendanceSnapshotRepository
 
     List<PayrollAttendanceSnapshot> findByPayrollId(Long payrollId);
 
+    List<PayrollAttendanceSnapshot> findByPayrollIdOrderByEmployeeIdAscWorkDateAsc(Long payrollId);
+
     List<PayrollAttendanceSnapshot> findByEmployeeIdAndWorkDateBetween(Long employeeId,
                                                                        LocalDate from,
                                                                        LocalDate to);
 
     boolean existsByPayrollIdAndEmployeeIdAndWorkDate(Long payrollId, Long employeeId,
                                                       LocalDate workDate);
+
+    void deleteByPayrollId(Long payrollId);
 
     /**
      * True when a payroll for (company, period) is frozen — status VALIDATED / APPROVED / PAID.
