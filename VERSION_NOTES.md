@@ -6,6 +6,68 @@ All modules were built against the live MySQL 8.4 database and verified with sta
 
 ---
 
+## Module 6 — Employees + Organization + Contracts (FROZEN 2026-08-06)
+
+**Status: FROZEN.** Full verification passed:
+- `mvn clean verify`: BUILD SUCCESS — 232 tests, 0 failures / 0 errors / 0 skipped (18 test classes: contract 13, schedule 9, organization 7, employee 8, employee-record 12, plus prior modules)
+- Fresh startup clean: Tomcat 8080, context-path `/api/v1`, Flyway schema `pointagepro` V1–V16 up to date — migration **V16** applied live (relaxes department-name uniqueness via STORED `active_name` + `uk_departments_company_code`)
+- Live E2E against MySQL/MariaDB (JWT minted for `admin`/`admin000`, session row verified): create department/position/location → flat employee create (auto matricule `EMP-001`, auto assignment + CDI contract + BASE 1500/transport 100/performance 200 + salary history) → Phase B records (document, 2 bank accounts with `isDefault=true` → exactly 1 default, dependent, emergency contact, 2 tax profiles → first auto-closed) → contract list/components/salary-history endpoints → tax-profile rules live (open profile stays open, back-dated open → 409, update-to-open while another open → 409) → `DELETE /employees/{id}` = terminate → `exit_date` set + open contract auto-closed (`EXPIRED`, `end_date` = today)
+- DB integrity: org rows unique per company (`uk_departments_company_code`, `uk_positions_company_code`, `uk_locations_company_code`), single ACTIVE contract per employee, single default bank account, single open tax profile per employee; all E2E rows cleaned, DB restored to post-migration state (only the `admin` user preserved)
+
+### API (base URL `http://<host>:8080/api/v1`)
+
+Module 6.1 — Organization (permissions `department.read/write`, `position.read/write`, `location.read/write`):
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | /departments, /positions, /locations | List / create (201) |
+| GET/PUT/DELETE | /departments/{id}, /positions/{id}, /locations/{id} | Get / update / soft-delete |
+| GET | /departments/lookup (and per-entity) | Dropdown lookup |
+| — | — | Delete guards: dept in use → 409; closed-name reuse allowed; cross-company references → 404 |
+
+Module 6.2 — Employees (`employee.read/write`, `employee.delete`):
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | /employees | List (page/size/search/department) / create (201, flat payload) |
+| GET/PUT/DELETE | /employees/{id} | Get / update / terminate (set `exit_date`, auto-close open ACTIVE contract) |
+| GET | /employees/departments, /employees/count | Helpers |
+| POST/GET | /employees/{id}/documents | Create / list (`document.write/read`) |
+| GET/PUT/DELETE | /employees/{id}/documents/{docId} | Get / update / delete |
+| POST/GET | /employees/{id}/bank-accounts | Create (single-default rule) / list |
+| GET/PUT/DELETE | /employees/{id}/bank-accounts/{baId} | Get / update / delete |
+| POST/GET | /employees/{id}/dependents | Create / list |
+| GET/PUT/DELETE | /employees/{id}/dependents/{depId} | Get / update / delete |
+| POST/GET | /employees/{id}/emergency-contacts | Create / list |
+| GET/PUT/DELETE | /employees/{id}/emergency-contacts/{ecId} | Get / update / delete |
+| POST/GET | /employees/{id}/tax-profiles | Create (one-open rule; creating closes current) / list |
+| GET/PUT | /employees/{id}/tax-profiles/{tpId} | Get / update (update-to-open while another open → 409) |
+| GET | /employees/{id}/assignments | Assignment history |
+
+Module 6.3 — Contracts (`contract.read/write`):
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | /employees/{id}/contracts | List / create (single-ACTIVE rule; BASE sibling-close) |
+| GET/PUT/DELETE | /contracts/{id} | Get / update / delete (delete guarded) |
+| GET/POST/PUT/DELETE | /contracts/{id}/components[/{cid}] | Salary components |
+| GET | /employees/{id}/salary-history | Salary history rows |
+
+Module 6.4 — Lookups (`/lookups/…`): employee-statuses, contract-types, contract-statuses, genders, marital-statuses, banks, document-types, dependent-relationships, tax-situations, salary-component-types.
+
+### Business rules (EMPLOYEE_BUSINESS_RULES.md v0.2 APPROVED)
+- Flat create translates `department/position` by name (must pre-exist), auto-matricule `EMP-NNN`, auto assignment, auto CDI contract + flat salary, optional schedule by code, optional leave balances.
+- One ACTIVE contract per employee; new ACTIVE contract closes the previous one (end_date = day before new start); BASE component replace refreshes amount and writes `salary_history`; delete guarded.
+- Single default bank account per employee (`isDefault=true` un-sets the others).
+- Tax profiles: one open row per employee; creating closes the current; back-dating over the open one → 409; update-to-open when another open → 409.
+- Payroll excludes employees whose `exitDate.isBefore(pFirst)` (V16 + `PayrollService`).
+- V16: department-name uniqueness relaxed to *active* rows only (STORED `active_name`) + `uk_departments_company_code` on code.
+
+### Migration
+- V16: `departments.active_name` STORED generated column (NULL when closed → active-name uniqueness only), `uk_departments_company_active_name`, `uk_departments_company_code` (code unique per company); drops `uk_departments_company_name`
+
+---
+
 ## Module 5 — Payroll runs + payslips (FROZEN 2026-08-06)
 
 **Status: FROZEN.** Full verification passed:

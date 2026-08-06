@@ -14,4 +14,6 @@ public interface TerminalRepository extends JpaRepository<Terminal, Long> {
     boolean existsBySerialNumber(String serialNumber);
 
     boolean existsByCode(String code);
+
+    long countByLocationId(Long locationId);
 }

@@ -13,4 +13,8 @@ public interface WorkScheduleRepository extends JpaRepository<WorkSchedule, Long
     Optional<WorkSchedule> findByCompanyIdAndCode(Long companyId, String code);
 
     Optional<WorkSchedule> findFirstByCompanyIdAndIsDefaultTrue(Long companyId);
+
+    boolean existsByCompanyIdAndCode(Long companyId, String code);
+
+    boolean existsByCompanyIdAndCodeAndIdNot(Long companyId, String code, Long id);
 }

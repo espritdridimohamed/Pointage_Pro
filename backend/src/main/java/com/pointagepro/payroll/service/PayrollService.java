@@ -610,6 +610,10 @@ public class PayrollService {
     /** Eligibility: active contract overlapping P + BASE_SALARY effective at P.last. */
     private ContextOutcome resolveContext(Long companyId, Employee employee,
                                           LocalDate pFirst, LocalDate pLast, LocalDate today) {
+        if (employee.getExitDate() != null && employee.getExitDate().isBefore(pFirst)) {
+            return new ContextOutcome(null, "employé quitté le " + employee.getExitDate()
+                    + " (avant la période)");
+        }
         EmployeeContract contract = null;
         for (EmployeeContract c : contractRepository.findByEmployeeIdOrderByStartDateDesc(employee.getId())) {
             if (c.getStatus() != null && "ACTIVE".equals(c.getStatus().getCode())

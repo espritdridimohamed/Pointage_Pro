@@ -10,4 +10,8 @@ import java.util.List;
 public interface LocationRepository extends JpaRepository<Location, Long> {
 
     List<Location> findByCompanyIdOrderByNameAsc(Long companyId);
+
+    boolean existsByCompanyIdAndCode(Long companyId, String code);
+
+    boolean existsByCompanyIdAndCodeAndIdNot(Long companyId, String code, Long id);
 }

@@ -15,4 +15,6 @@ public interface EmployeeScheduleRepository extends JpaRepository<EmployeeSchedu
 
     Optional<EmployeeSchedule> findFirstByEmployeeIdAndValidFromLessThanEqualAndValidToIsNullOrderByValidFromDesc(
             Long employeeId, LocalDate date);
+
+    long countByScheduleId(Long scheduleId);
 }

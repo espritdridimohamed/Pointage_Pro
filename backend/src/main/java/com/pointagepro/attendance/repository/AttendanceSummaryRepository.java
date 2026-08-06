@@ -22,6 +22,8 @@ public interface AttendanceSummaryRepository extends JpaRepository<AttendanceSum
                                                                                LocalDate from,
                                                                                LocalDate to);
 
+    long countByScheduleId(Long scheduleId);
+
     /**
      * Eagerly loads the associations needed to map a summary to its response DTO after the
      * transaction commits. {@code @Query} is used so the method name is not parsed as a

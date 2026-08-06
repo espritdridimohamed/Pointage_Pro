@@ -10,4 +10,6 @@ public interface SalaryComponentRepository extends JpaRepository<SalaryComponent
     List<SalaryComponent> findByContractIdOrderByStartDateDesc(Long contractId);
 
     List<SalaryComponent> findByContractIdAndIsActiveTrueOrderByStartDateDesc(Long contractId);
+
+    long countByContractId(Long contractId);
 }

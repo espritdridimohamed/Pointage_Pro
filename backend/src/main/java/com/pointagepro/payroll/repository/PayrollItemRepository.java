@@ -21,5 +21,7 @@ public interface PayrollItemRepository extends JpaRepository<PayrollItem, Long> 
 
     long countByPayrollId(Long payrollId);
 
+    long countByContractId(Long contractId);
+
     void deleteByPayrollId(Long payrollId);
 }

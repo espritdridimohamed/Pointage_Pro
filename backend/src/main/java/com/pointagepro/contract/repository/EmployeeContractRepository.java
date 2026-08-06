@@ -11,4 +11,6 @@ public interface EmployeeContractRepository extends JpaRepository<EmployeeContra
     List<EmployeeContract> findByEmployeeIdOrderByStartDateDesc(Long employeeId);
 
     Optional<EmployeeContract> findFirstByEmployeeIdAndStatusCodeOrderByStartDateDesc(Long employeeId, String statusCode);
+
+    long countByLocationId(Long locationId);
 }

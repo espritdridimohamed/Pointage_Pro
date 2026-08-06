@@ -11,4 +11,10 @@ public interface EmployeeAssignmentRepository extends JpaRepository<EmployeeAssi
     List<EmployeeAssignment> findByEmployeeIdOrderByValidFromDesc(Long employeeId);
 
     Optional<EmployeeAssignment> findFirstByEmployeeIdAndValidToIsNullOrderByValidFromDesc(Long employeeId);
+
+    long countByDepartmentId(Long departmentId);
+
+    long countByPositionId(Long positionId);
+
+    long countByLocationId(Long locationId);
 }
